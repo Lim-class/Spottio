@@ -1,0 +1,85 @@
+<!-- utente.html -->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="user-profile-title">Profilo Utente</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            transition: background-color 0.3s ease;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+    <!-- Navigazione a sinistra -->
+    <div class="w-1/5 bg-white p-6 rounded-r-2xl shadow-xl flex flex-col justify-start items-start">
+        <h2 id="menu-title" class="text-2xl font-bold text-gray-800 mb-6">Menu</h2>
+        <div id="nav-container"></div>
+        <div class="mt-auto pt-6 flex flex-col items-start w-full space-y-4 relative">
+            <!-- Pulsante che apre il dropdown -->
+            <div class="relative">
+                <button id="language-toggle" class="flex items-center text-lg font-medium text-gray-600 hover:text-blue-600 hover:bg-gray-100 p-2 rounded-lg transition duration-200 focus:outline-none">
+                    <img id="selected-flag" src="https://flagcdn.com/it.svg" alt="Bandiera Italiana" class="h-4 w-6 mr-2">
+                    <span id="selected-lang-text">Italiano</span>
+                    <svg id="dropdown-icon" class="w-4 h-4 ml-2 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <!-- Contenitore per il menu a tendina delle lingue -->
+                <div id="language-dropdown-container"></div>
+            </div>
+            <a href="index.html" id="logout-link" class="text-lg font-medium text-red-600 hover:underline transition duration-200" data-translate="logout">Esci</a>
+        </div>
+    </div>
+    <!-- Contenuto a destra specifico per la pagina "Profilo Utente" -->
+    <div class="flex-grow p-8 flex flex-col items-center">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-3xl mx-auto">
+            <div class="flex flex-col items-center mb-6">
+                <!-- Contenitore per l'immagine del profilo -->
+                <div id="profile-image-container" class="w-32 h-32 rounded-full border-4 border-white shadow-lg mb-4">
+                    <!-- L'immagine verrà caricata qui tramite JavaScript -->
+                </div>
+                <h1 id="user-profile-name" class="text-4xl font-bold text-gray-800 mb-2"></h1>
+                <p id="user-profile-bio" class="text-gray-600 text-lg text-center max-w-md"></p>
+                <!-- Pulsante Segui e statistiche -->
+                <div class="mt-4 flex flex-col items-center">
+                    <div class="flex space-x-6">
+                        <div class="flex flex-col items-center">
+                            <span id="followers-count" class="text-xl font-bold text-gray-800">0</span>
+                            <span class="text-sm text-gray-500">Follower</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span id="following-count" class="text-xl font-bold text-gray-800">0</span>
+                            <span class="text-sm text-gray-500">Seguiti</span>
+                        </div>
+                    </div>
+                    <button id="follow-button" class="mt-4 px-6 py-2 rounded-full font-bold text-white transition-colors duration-200 focus:outline-none">
+                        Segui
+                    </button>
+                </div>
+            </div>
+
+            <hr class="my-8">
+
+            <!-- Sezione Post Pubblicati -->
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Post Pubblicati</h2>
+            <div id="user-posts-container" class="space-y-6">
+                <!-- I post verranno caricati qui. -->
+                <p id="no-posts-message" class="text-gray-500 text-center text-lg">Nessun post pubblicato.</p>
+            </div>
+        </div>
+    </div>
+    <script src="utente.js"></script>
+    <script src="ingresso_per_Gestione_Utenti/Ingresso_Gestione_Utenti.js"></script>
+    <script src="impostazioni/background-color.js"></script>
+    <script src="NAV/traduzioni/en.js"></script>
+    <script src="NAV/traduzioni/es.js"></script>
+    <script src="NAV/traduzioni/fr.js"></script>
+    <script src="NAV/language-dropdown.js"></script>
+    <script src="NAV/nav.js"></script>
+</body>
+</html>
