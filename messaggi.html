@@ -66,7 +66,15 @@
             </form>
         </div>
     </div>
-    <!-- <script src="messaggi-posta/public.js"></script> -->
+    <!-- SDK Firebase App (necessario) -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+
+<!-- SDK Firebase Firestore (necessario per il database) -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<!-- Il tuo file script (deve venire DOPO le librerie Firebase) -->
+<script src="messages.js"></script>
+    <script src="messaggi-posta/public.js"></script> 
     <script src="messages.js"></script>
     <script src="ingresso_per_Gestione_Utenti/Ingresso_Gestione_Utenti.js"></script>
     <script src="impostazioni/background-color.js"></script>
@@ -77,3 +85,4 @@
     <script src="NAV/nav.js"></script>
 </body>
 </html>
+
