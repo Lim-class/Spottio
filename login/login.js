@@ -1,114 +1,145 @@
-// Questo file contiene la logica principale di login e registrazione.
-// Si basa su funzioni e variabili definite in Lingue_login.js.
-
-// Inizializza gli account nel localStorage
-(function initializeUsers() {
-    if (!localStorage.getItem('users')) {
-        const initialUsers = [
-            // L'utente 'admin' deve avere una proprietà `isAdmin` impostata su true
-            { username: 'admin', password: 'adminpass', isAdmin: true },
-            { username: 'Utente1', password: 'Utente1' },
-            { username: 'Utente2', password: 'Utente2'}
-        ];
-        localStorage.setItem('users', JSON.stringify(initialUsers));
-    }
-})();
-
-// Inizializza la lingua all'avvio
-window.onload = function() {
-    const savedLang = localStorage.getItem('language') || 'it'; // Default italiano
-    setLanguage(savedLang);
+// Configurazione Firebase dal tuo google-services.json
+const firebaseConfig = {
+    apiKey: "AIzaSyAx_wHQ_K_B0lUSLUQLNupdX8krn0iiHtA",
+    authDomain: "spottio-1419e.firebaseapp.com",
+    projectId: "spottio-1419e",
+    storageBucket: "spottio-1419e.firebasestorage.app"
 };
 
-// Logica per il pulsante "Accedi"
+// Inizializza Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// Helper per convertire username in finta email (uguale alla MainActivity.java)
+function usernameToEmail(username) {
+    return username.toLowerCase().trim() + "@spottio.it";
+}
+
+// Inizializza lingua all'avvio (Logica originale mantenuta)
+window.onload = function() {
+    const savedLang = localStorage.getItem('language') || 'it';
+    if (typeof setLanguage === 'function') {
+        setLanguage(savedLang);
+    }
+};
+
+// --- LOGICA LOGIN ---
 document.getElementById('loginForm').addEventListener('submit', function(event) {
     event.preventDefault();
     const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
-
-    // Legge gli utenti dal localStorage
-    const users = JSON.parse(localStorage.getItem('users'));
-    
-    // Controlla se le credenziali corrispondono
-    const userFound = users.find(user => user.username === username && user.password === password);
+    const fakeEmail = usernameToEmail(username);
     const lang = localStorage.getItem('language') || 'it';
 
-    if (userFound) {
-        showMessage(translations[lang].loginSuccess);
-        // Salva il nome utente nel localStorage
-        localStorage.setItem('currentUser', username);
-        // Reindirizza alla pagina di benvenuto
-        window.location.href = 'pubblici.html';
-    } else {
-        showMessage(translations[lang].loginError, true);
-    }
+    auth.signInWithEmailAndPassword(fakeEmail, password)
+        .then((userCredential) => {
+            // Successo
+            if (typeof showMessage === 'function') {
+                showMessage(translations[lang].loginSuccess);
+            }
+            localStorage.setItem('currentUser', username);
+            setTimeout(() => {
+                window.location.href = 'pubblici.html';
+            }, 1000);
+        })
+        .catch((error) => {
+            // Errore
+            console.error("Errore login:", error.code);
+            if (typeof showMessage === 'function') {
+                showMessage(translations[lang].loginError, true);
+            } else {
+                const msgCont = document.getElementById('message-container');
+                msgCont.innerText = "Credenziali errate o utente inesistente.";
+                msgCont.style.color = "red";
+            }
+        });
 });
 
-// Logica per il pulsante "Registrati" (nel form di login)
-document.getElementById('show-signup').addEventListener('click', function(event) {
-    event.preventDefault();
-    toggleForms(false);
-});
-
-// Logica per il pulsante "Accedi" (nel form di registrazione)
-document.getElementById('show-login').addEventListener('click', function(event) {
-    event.preventDefault();
-    toggleForms(true);
-});
-
-// Logica per il pulsante "Registrati" (nel form di registrazione)
+// --- LOGICA REGISTRAZIONE ---
 document.getElementById('signupForm').addEventListener('submit', function(event) {
     event.preventDefault();
     const username = document.getElementById('signup-username').value;
     const password = document.getElementById('signup-password').value;
-
-    // Legge gli utenti dal localStorage
-    const users = JSON.parse(localStorage.getItem('users'));
-
-    // Controlla se l'username esiste già
-    const userExists = users.some(user => user.username === username);
+    const fakeEmail = usernameToEmail(username);
     const lang = localStorage.getItem('language') || 'it';
-    
-    if (userExists) {
-        showMessage(translations[lang].signupUsernameExists, true);
-        return;
-    }
 
-    // Aggiunge il nuovo utente
-    users.push({ username, password });
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    showMessage(translations[lang].signupSuccess, false);
-    
-    // Dopo la registrazione, torna al modulo di login
-    setTimeout(() => {
-        toggleForms(true);
-        document.getElementById('login-username').value = username;
-        document.getElementById('signup-username').value = '';
-        document.getElementById('signup-password').value = '';
-    }, 1000);
+    auth.createUserWithEmailAndPassword(fakeEmail, password)
+        .then((userCredential) => {
+            const user = userCredential.user;
+            // Salva profilo su Firestore (collezione 'users')
+            return db.collection("users").doc(user.uid).set({
+                username: username,
+                email: fakeEmail,
+                bio: "Ciao, sono nuovo su Spottio!",
+                isAdmin: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        })
+        .then(() => {
+            if (typeof showMessage === 'function') {
+                showMessage(translations[lang].signupSuccess, false);
+            }
+            setTimeout(() => {
+                toggleForms(true);
+                document.getElementById('login-username').value = username;
+            }, 1500);
+        })
+        .catch((error) => {
+            console.error("Errore registrazione:", error);
+            let errorMsg = error.message;
+            if (error.code === 'auth/email-already-in-use') {
+                errorMsg = translations[lang].signupUsernameExists;
+            }
+            if (typeof showMessage === 'function') {
+                showMessage(errorMsg, true);
+            } else {
+                alert(errorMsg);
+            }
+        });
 });
 
-// Logica per mostrare/nascondere il menu a tendina delle lingue
+// --- LOGICA UI (Originale Spottio) ---
+
+function toggleForms(showLogin) {
+    if (showLogin) {
+        document.getElementById('login-form').classList.remove('hidden');
+        document.getElementById('signup-form').classList.add('hidden');
+    } else {
+        document.getElementById('login-form').classList.add('hidden');
+        document.getElementById('signup-form').classList.remove('hidden');
+    }
+}
+
+document.getElementById('show-signup').addEventListener('click', (e) => {
+    e.preventDefault();
+    toggleForms(false);
+});
+
+document.getElementById('show-login').addEventListener('click', (e) => {
+    e.preventDefault();
+    toggleForms(true);
+});
+
+// Selettore Lingua
 document.getElementById('language-dropdown-button').addEventListener('click', () => {
     document.getElementById('language-dropdown-menu').classList.toggle('hidden');
 });
 
-// Logica per la selezione di una lingua dal menu a tendina
 document.querySelectorAll('.lang-option').forEach(button => {
     button.addEventListener('click', (event) => {
         const selectedLang = event.currentTarget.dataset.lang;
         const selectedText = event.currentTarget.dataset.text;
         const selectedFlagSrc = event.currentTarget.querySelector('img').src;
 
-        // Nasconde il menu a tendina
         document.getElementById('language-dropdown-menu').classList.add('hidden');
-        
-        // Aggiorna il testo e la bandiera del pulsante principale
         document.getElementById('selected-lang-text').textContent = selectedText;
         document.getElementById('selected-lang-flag').src = selectedFlagSrc;
 
-        // Imposta la lingua
-        setLanguage(selectedLang);
+        if (typeof setLanguage === 'function') {
+            setLanguage(selectedLang);
+        }
     });
 });
