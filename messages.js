@@ -28,6 +28,7 @@ const messagesContainer = document.getElementById('messages-container');
 const messageForm = document.getElementById('message-form');
 const messageInput = document.getElementById('message-input');
 const noChatMessage = document.getElementById('no-chat-message');
+const recipientAvatar = document.getElementById('recipient-avatar');
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Recupero utente loggato dal localStorage
@@ -51,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
  * Configura gli eventi di interazione dell'utente
  */
 function setupEventListeners() {
-    // Ricerca Utenti dinamica migliorata
+    // Ricerca Utenti dinamica
     userSearchInput.addEventListener('input', async (e) => {
         const searchTerm = e.target.value.toLowerCase().trim();
         
@@ -61,34 +62,35 @@ function setupEventListeners() {
         }
         
         try {
-            // Otteniamo tutti i documenti dalla collezione users
             const snapshot = await db.collection("users").get();
             const filteredUsers = [];
             
-            console.log("Ricerca in corso... Documenti totali in 'users':", snapshot.size);
-
             snapshot.forEach(doc => {
                 const data = doc.data();
                 const docId = doc.id;
                 const usernameField = data.username || "";
                 
-                // Cerchiamo corrispondenze sia nel campo username che nell'ID del documento
                 const matchesUsername = usernameField.toString().toLowerCase().includes(searchTerm);
                 const matchesDocId = docId.toLowerCase().includes(searchTerm);
                 
-                // Nome finale da visualizzare (preferenza al campo username, poi ID)
                 const displayName = usernameField || docId;
 
-                // Escludiamo noi stessi dalla ricerca
                 if ((matchesUsername || matchesDocId) && displayName !== currentUser.username) {
                     filteredUsers.push({ id: docId, username: displayName });
                 }
             });
 
-            console.log("Utenti filtrati trovati:", filteredUsers.length);
             renderSearchResults(filteredUsers);
         } catch (err) {
-            console.error("Errore critico durante la ricerca utenti:", err);
+            console.error("Errore ricerca utenti:", err);
+        }
+    });
+
+    // Supporto per invio con tasto INVIO (WhatsApp style)
+    messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            messageForm.dispatchEvent(new Event('submit'));
         }
     });
 
@@ -106,7 +108,7 @@ function setupEventListeners() {
         
         if (!text || !targetUser) return;
 
-        const timestamp = Date.now(); // Coerente con ChatFragment.java
+        const timestamp = Date.now(); 
         const messageData = {
             sender: currentUser.username,
             receiver: targetUser,
@@ -150,7 +152,6 @@ function listenToMyChats() {
                 return;
             }
 
-            // Ordina le chat per data (la più recente in alto)
             const sortedDocs = snapshot.docs.sort((a, b) => {
                 return (b.data().lastUpdate || 0) - (a.data().lastUpdate || 0);
             });
@@ -187,16 +188,19 @@ function listenToMyChats() {
  * Carica una conversazione specifica e attiva il listener dei messaggi
  */
 function startNewChat(recipientName) {
-    if (targetUser === recipientName && chatUnsubscribe) return;
     if (chatUnsubscribe) chatUnsubscribe();
     
     targetUser = recipientName;
     chatRecipientName.textContent = recipientName;
     
+    if (recipientAvatar) {
+        recipientAvatar.textContent = recipientName.charAt(0).toUpperCase();
+    }
+    
     chatHeader.classList.remove('hidden');
     messageForm.classList.remove('hidden');
     noChatMessage.classList.add('hidden');
-    messagesContainer.innerHTML = '<div class="text-center p-10 text-gray-400 italic">Sincronizzazione messaggi...</div>';
+    messagesContainer.innerHTML = '<div class="text-center my-auto text-gray-400 italic">Caricamento messaggi...</div>';
 
     chatUnsubscribe = db.collection("chats")
         .orderBy("timestamp", "asc")
@@ -218,10 +222,11 @@ function startNewChat(recipientName) {
 
             if (!messagesFound) {
                 messagesContainer.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-full text-gray-400">
-                        <p class="mt-4 text-sm text-center">Inizia la tua conversazione con <strong>${targetUser}</strong>!</p>
+                    <div class="flex flex-col items-center justify-center h-full text-gray-400 my-auto">
+                        <p class="text-sm text-center">Inizia la tua conversazione con <strong>${targetUser}</strong>!</p>
                     </div>`;
             } else {
+                // SCROLL AUTOMATICO AL FONDO
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
         }, (err) => {
@@ -230,21 +235,21 @@ function startNewChat(recipientName) {
 }
 
 /**
- * Helper: Disegna un singolo messaggio nel container
+ * Disegna un singolo messaggio nel container
  */
 function renderSingleMessage(text, isMe) {
     const msgDiv = document.createElement('div');
     msgDiv.className = `flex ${isMe ? 'justify-end' : 'justify-start'} mb-3`;
     msgDiv.innerHTML = `
         <div class="max-w-[75%] p-3 rounded-2xl shadow-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-gray-200 text-gray-800 rounded-tl-none'}">
-            <p class="text-sm leading-relaxed">${text}</p>
+            <p class="text-sm leading-relaxed whitespace-pre-wrap">${text}</p>
         </div>
     `;
     messagesContainer.appendChild(msgDiv);
 }
 
 /**
- * Helper: Gestione UI ricerca
+ * Gestione UI ricerca
  */
 function renderSearchResults(users) {
     searchResultsContainer.innerHTML = '';
