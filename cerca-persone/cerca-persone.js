@@ -17,50 +17,73 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchResultsContainer = document.getElementById('search-results-container');
     let allUsers = []; // Variabile per memorizzare tutti gli utenti scaricati
 
-    // 1. Scarica gli utenti dalla collezione "users" di Firestore
-    function fetchUsers() {
-        db.collection("users").get().then((querySnapshot) => {
+    /**
+     * 1. Ascolta gli utenti dalla collezione "users" in TEMPO REALE.
+     * Usiamo onSnapshot invece di get() per vedere i cambiamenti immediati.
+     */
+    function listenToUsers() {
+        // Mostra un messaggio di caricamento iniziale
+        searchResultsContainer.innerHTML = `
+            <p class="text-gray-500 text-center text-lg">Caricamento database utenti...</p>
+        `;
+
+        db.collection("users").onSnapshot((querySnapshot) => {
             allUsers = [];
             querySnapshot.forEach((doc) => {
                 const userData = doc.data();
-                // Aggiungiamo l'ID del documento per riferimento
-                allUsers.push({ id: doc.id, ...userData });
+                // Assicuriamoci di catturare l'ID e i dati
+                allUsers.push({ 
+                    id: doc.id, 
+                    username: userData.username || "", 
+                    ...userData 
+                });
             });
             
-            // Messaggio iniziale dopo il caricamento
+            console.log("Utenti totali caricati:", allUsers.length);
+
+            // Se l'utente non sta scrivendo nulla, mostra il messaggio di invito alla ricerca
+            if (searchInput.value.trim() === '') {
+                searchResultsContainer.innerHTML = `
+                    <p class="text-gray-500 text-center text-lg">Inizia a digitare per cercare tra i ${allUsers.length} utenti.</p>
+                `;
+            } else {
+                // Se c'è già del testo (es. aggiornamento dati durante ricerca), rifiltra
+                performSearch(searchInput.value);
+            }
+        }, (error) => {
+            console.error("Errore Firebase Firestore:", error);
             searchResultsContainer.innerHTML = `
-                <p class="text-gray-500 text-center text-lg">Inizia a digitare per cercare gli utenti.</p>
-            `;
-        }).catch((error) => {
-            console.error("Errore nel caricamento utenti:", error);
-            searchResultsContainer.innerHTML = `
-                <p class="text-red-500 text-center text-lg">Errore nel caricamento dei dati.</p>
+                <p class="text-red-500 text-center text-lg">Errore: assicurati che le regole di lettura su Firebase siano pubbliche.</p>
             `;
         });
     }
 
-    // 2. Funzione per visualizzare i risultati
+    /**
+     * 2. Funzione per visualizzare i risultati della ricerca
+     */
     function displayResults(users) {
         searchResultsContainer.innerHTML = ''; 
 
         if (users.length === 0) {
             searchResultsContainer.innerHTML = `
-                <p class="text-gray-500 text-center text-lg">Nessun utente trovato.</p>
+                <p class="text-gray-500 text-center text-lg">Nessun utente trovato con questo nome.</p>
             `;
             return;
         }
 
         users.forEach(user => {
-            // Se lo username non esiste (magari l'utente ha solo email), usa un fallback
-            const nameToDisplay = user.username || "Utente Anonimo";
+            const nameToDisplay = user.username || "Utente senza nome";
             
             const userCard = document.createElement('div');
-            userCard.className = 'flex items-center p-4 bg-gray-50 rounded-lg shadow-sm hover:bg-gray-100 transition duration-200 cursor-pointer';
+            userCard.className = 'flex items-center p-4 bg-gray-50 rounded-lg shadow-sm hover:bg-gray-100 transition duration-200 cursor-pointer border border-transparent hover:border-blue-300';
             userCard.innerHTML = `
-                <div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-xl mr-4">
+                <div class="h-12 w-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4 shadow-sm">
                     ${nameToDisplay.charAt(0).toUpperCase()}
                 </div>
-                <h3 class="font-semibold text-gray-900 text-lg">${nameToDisplay}</h3>
+                <div>
+                    <h3 class="font-semibold text-gray-900 text-lg">${nameToDisplay}</h3>
+                    <p class="text-xs text-gray-400">ID: ${user.id.substring(0, 8)}...</p>
+                </div>
             `;
             
             userCard.addEventListener('click', () => {
@@ -74,26 +97,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 3. Gestione input di ricerca
-    searchInput.addEventListener('input', (event) => {
-        const searchTerm = event.target.value.toLowerCase().trim();
+    /**
+     * 3. Logica di filtraggio
+     */
+    function performSearch(term) {
+        const searchTerm = term.toLowerCase().trim();
         
         if (searchTerm === '') {
             searchResultsContainer.innerHTML = `
-                <p class="text-gray-500 text-center text-lg">Inizia a digitare per cercare gli utenti.</p>
+                <p class="text-gray-500 text-center text-lg">Inizia a digitare per cercare tra i ${allUsers.length} utenti.</p>
             `;
             return;
         }
 
-        // Filtra sulla lista locale scaricata da Firestore
+        // Filtra la lista locale
         const filteredUsers = allUsers.filter(user => {
             const username = (user.username || "").toLowerCase();
             return username.includes(searchTerm);
         });
 
         displayResults(filteredUsers);
+    }
+
+    // Listener per l'input di ricerca
+    searchInput.addEventListener('input', (event) => {
+        performSearch(event.target.value);
     });
 
-    // Avvia il caricamento
-    fetchUsers();
+    // Avvia l'ascolto in tempo reale
+    listenToUsers();
 });
