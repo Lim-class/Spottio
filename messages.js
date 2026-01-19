@@ -6,19 +6,19 @@ const firebaseConfig = {
     storageBucket: "spottio-1419e.firebasestorage.app"
 };
 
-// Inizializza Firebase
+// Inizializza Firebase solo se non è già stato inizializzato
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.firestore();
 
-// Variabili di stato
+// Variabili di stato globale
 let currentUser = null;
-let currentChatId = null;
-let targetUser = null; // Nome dell'utente con cui sto parlando
+let targetUser = null; 
 let chatUnsubscribe = null;
+let previewsUnsubscribe = null;
 
-// DOM Elements
+// Elementi del DOM
 const userSearchInput = document.getElementById('user-search');
 const searchResultsContainer = document.getElementById('search-results');
 const chatsListContainer = document.getElementById('chats-list');
@@ -29,199 +29,243 @@ const messageForm = document.getElementById('message-form');
 const messageInput = document.getElementById('message-input');
 const noChatMessage = document.getElementById('no-chat-message');
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Recupera l'utente loggato dalle SharedPreferences del browser (localStorage)
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Recupero utente loggato dal localStorage
     const loggedInUsername = localStorage.getItem('currentUser');
     
     if (loggedInUsername) {
         currentUser = { username: loggedInUsername };
-        console.log("Messaggi attivi per:", currentUser.username);
+        console.log("Sistema messaggi avviato per:", currentUser.username);
         
-        // 2. Carica la lista delle conversazioni esistenti
+        // 2. Avvia l'ascolto delle anteprime chat (lista a sinistra)
         listenToMyChats();
     } else {
+        // Se non c'è sessione, torna al login
         window.location.href = 'index.html';
     }
 
     setupEventListeners();
 });
 
+/**
+ * Configura gli eventi di interazione dell'utente
+ */
 function setupEventListeners() {
-    // Ricerca utenti su FIREBASE migliorata
+    // Ricerca Utenti dinamica
     userSearchInput.addEventListener('input', async (e) => {
         const searchTerm = e.target.value.toLowerCase().trim();
         
-        // Se la barra è vuota, nascondi i risultati
         if (searchTerm.length === 0) {
-            searchResultsContainer.innerHTML = '';
-            searchResultsContainer.classList.add('hidden');
+            hideSearchResults();
             return;
         }
         
         try {
-            // Recuperiamo tutti gli utenti (per piccoli database) o filtriamo
-            // Nota: Firestore non supporta bene la ricerca partial string case-insensitive 
-            // nativamente, quindi filtriamo i risultati scaricati per semplicità
             const snapshot = await db.collection("users").get();
             const filteredUsers = [];
             
             snapshot.forEach(doc => {
                 const data = doc.data();
-                const uname = data.username || "";
-                // Filtriamo escludendo noi stessi e controllando se contiene il termine
+                // Controllo flessibile: usa username o ID del documento
+                const uname = (data.username || doc.id || "").toString();
+                
                 if (uname.toLowerCase().includes(searchTerm) && uname !== currentUser.username) {
                     filteredUsers.push({ id: doc.id, username: uname });
                 }
             });
 
-            searchResultsContainer.innerHTML = '';
-
-            if (filteredUsers.length > 0) {
-                filteredUsers.forEach(user => {
-                    const div = document.createElement('div');
-                    div.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0 text-gray-700';
-                    div.textContent = user.username;
-                    div.onclick = () => {
-                        console.log("Inizio chat con:", user.username);
-                        startNewChat(user.username);
-                        userSearchInput.value = '';
-                        searchResultsContainer.innerHTML = '';
-                        searchResultsContainer.classList.add('hidden');
-                    };
-                    searchResultsContainer.appendChild(div);
-                });
-                searchResultsContainer.classList.remove('hidden');
-            } else {
-                searchResultsContainer.innerHTML = '<div class="p-3 text-gray-400 italic">Nessun utente trovato</div>';
-                searchResultsContainer.classList.remove('hidden');
-            }
+            renderSearchResults(filteredUsers);
         } catch (err) {
             console.error("Errore durante la ricerca utenti:", err);
         }
     });
 
-    // Chiudi la ricerca se si clicca fuori
+    // Chiusura automatica dei risultati della ricerca al click esterno
     document.addEventListener('click', (e) => {
         if (!userSearchInput.contains(e.target) && !searchResultsContainer.contains(e.target)) {
-            searchResultsContainer.classList.add('hidden');
+            hideSearchResults();
         }
     });
 
-    // Invio Messaggio su FIREBASE (Coerente con ChatFragment.java)
+    // Invio del messaggio
     messageForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const text = messageInput.value.trim();
+        
         if (!text || !targetUser) return;
 
-        // Struttura dati identica a quella usata nel file Java
+        const timestamp = Date.now(); // Coerente con ChatFragment.java
         const messageData = {
             sender: currentUser.username,
             receiver: targetUser,
             text: text,
-            timestamp: Date.now() 
+            timestamp: timestamp
         };
 
         try {
-            // Invio alla collezione globale "chats"
+            // Svuota input subito per UX
+            messageInput.value = '';
+
+            // 1. Aggiungi il messaggio alla collezione globale 'chats'
             await db.collection("chats").add(messageData);
             
-            // Aggiorniamo anche un'anteprima per la lista chat a sinistra
-            const chatId = [currentUser.username, targetUser].sort().join('_');
-            await db.collection("chat_previews").doc(chatId).set({
+            // 2. Aggiorna l'anteprima (per la lista a sinistra)
+            const previewId = [currentUser.username, targetUser].sort().join('_');
+            await db.collection("chat_previews").doc(previewId).set({
                 lastMessage: text,
-                lastUpdate: Date.now(),
+                lastUpdate: timestamp,
                 participants: [currentUser.username, targetUser]
             }, { merge: true });
 
-            messageInput.value = '';
         } catch (err) {
             console.error("Errore nell'invio del messaggio:", err);
+            // In caso di errore, si potrebbe ripristinare il testo nell'input
         }
     });
 }
 
-// Ascolta le conversazioni attive
+/**
+ * Ascolta i cambiamenti nella lista delle conversazioni
+ */
 function listenToMyChats() {
-    db.collection("chat_previews")
+    if (previewsUnsubscribe) previewsUnsubscribe();
+
+    previewsUnsubscribe = db.collection("chat_previews")
         .where("participants", "array-contains", currentUser.username)
         .onSnapshot((snapshot) => {
             chatsListContainer.innerHTML = '';
+            
             if (snapshot.empty) {
-                chatsListContainer.innerHTML = '<p class="text-gray-400 text-center mt-4 text-sm italic">Nessuna conversazione attiva</p>';
+                chatsListContainer.innerHTML = '<p class="text-gray-400 text-center mt-6 text-sm italic">Nessuna conversazione trovata</p>';
                 return;
             }
 
-            // Ordiniamo le chat per data di ultimo aggiornamento (lato client)
-            const sortedDocs = snapshot.docs.sort((a, b) => b.data().lastUpdate - a.data().lastUpdate);
+            // Ordina le chat per data (la più recente in alto)
+            const sortedDocs = snapshot.docs.sort((a, b) => {
+                return (b.data().lastUpdate || 0) - (a.data().lastUpdate || 0);
+            });
 
             sortedDocs.forEach(doc => {
                 const data = doc.data();
                 const recipient = data.participants.find(p => p !== currentUser.username);
                 
-                const chatItem = document.createElement('div');
+                if (!recipient) return;
+
                 const isSelected = targetUser === recipient;
-                chatItem.className = `flex items-center p-3 mb-2 rounded-xl cursor-pointer transition ${isSelected ? 'bg-blue-100' : 'hover:bg-gray-100'}`;
-                chatItem.innerHTML = `
-                    <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold mr-3 shrink-0">
-                        ${recipient ? recipient.charAt(0).toUpperCase() : '?'}
+                const chatDiv = document.createElement('div');
+                chatDiv.className = `flex items-center p-3 mb-2 rounded-xl cursor-pointer transition-all duration-200 ${isSelected ? 'bg-blue-100 shadow-sm' : 'hover:bg-gray-100'}`;
+                
+                chatDiv.innerHTML = `
+                    <div class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold mr-3 shrink-0 shadow-sm">
+                        ${recipient.charAt(0).toUpperCase()}
                     </div>
                     <div class="flex-grow overflow-hidden">
-                        <div class="flex justify-between items-baseline">
-                            <h4 class="font-semibold text-gray-800 truncate">${recipient}</h4>
-                        </div>
-                        <p class="text-xs text-gray-500 truncate">${data.lastMessage || '...'}</p>
+                        <h4 class="font-semibold text-gray-800 truncate">${recipient}</h4>
+                        <p class="text-xs text-gray-500 truncate">${data.lastMessage || 'Nessun messaggio'}</p>
                     </div>
                 `;
-                chatItem.onclick = () => startNewChat(recipient);
-                chatsListContainer.appendChild(chatItem);
+                
+                chatDiv.onclick = () => startNewChat(recipient);
+                chatsListContainer.appendChild(chatDiv);
             });
-        }, (error) => {
-            console.error("Errore nelle chat_previews:", error);
+        }, (err) => {
+            console.error("Errore listener anteprime:", err);
         });
 }
 
-// Seleziona una chat e attiva l'ascolto (Filtro incrociato come Java)
+/**
+ * Carica una conversazione specifica e attiva il listener dei messaggi
+ */
 function startNewChat(recipientName) {
+    // Evita di ricaricare la stessa chat se è già attiva
+    if (targetUser === recipientName && chatUnsubscribe) return;
+
+    // Pulisce il listener precedente
     if (chatUnsubscribe) chatUnsubscribe();
     
     targetUser = recipientName;
     chatRecipientName.textContent = recipientName;
+    
+    // UI Updates
     chatHeader.classList.remove('hidden');
     messageForm.classList.remove('hidden');
     noChatMessage.classList.add('hidden');
-    messagesContainer.innerHTML = '<div class="text-center p-4 text-gray-400 italic">Caricamento messaggi...</div>';
+    messagesContainer.innerHTML = '<div class="text-center p-10 text-gray-400 italic">Sincronizzazione messaggi...</div>';
 
-    // Listener messaggi (Filtro identico a ChatFragment.java)
+    // Listener messaggi (Filtro incrociato identico all'app Android)
     chatUnsubscribe = db.collection("chats")
         .orderBy("timestamp", "asc")
         .onSnapshot((snapshot) => {
             messagesContainer.innerHTML = '';
-            let hasMessages = false;
+            let messagesFound = false;
 
             snapshot.forEach(doc => {
                 const msg = doc.data();
-                const isMyMsg = msg.sender === currentUser.username && msg.receiver === targetUser;
-                const isHisMsg = msg.sender === targetUser && msg.receiver === currentUser.username;
+                
+                // Filtro sicurezza: solo messaggi tra la coppia selezionata
+                const isFromMeToHim = msg.sender === currentUser.username && msg.receiver === targetUser;
+                const isFromHimToMe = msg.sender === targetUser && msg.receiver === currentUser.username;
 
-                if (isMyMsg || isHisMsg) {
-                    hasMessages = true;
+                if (isFromMeToHim || isFromHimToMe) {
+                    messagesFound = true;
                     const isMe = msg.sender === currentUser.username;
-                    const msgDiv = document.createElement('div');
-                    msgDiv.className = `flex ${isMe ? 'justify-end' : 'justify-start'} mb-3`;
-                    msgDiv.innerHTML = `
-                        <div class="max-w-[80%] p-3 rounded-2xl shadow-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-gray-200 text-gray-800 rounded-tl-none'}">
-                            <p class="text-sm">${msg.text}</p>
-                        </div>
-                    `;
-                    messagesContainer.appendChild(msgDiv);
+                    renderSingleMessage(msg.text, isMe);
                 }
             });
 
-            if (!hasMessages) {
-                messagesContainer.innerHTML = '<p class="text-center text-gray-400 mt-10">Nessun messaggio. Inizia tu la conversazione!</p>';
+            if (!messagesFound) {
+                messagesContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                        <p class="mt-4 text-sm text-center">Inizia la tua conversazione con <strong>${targetUser}</strong>!</p>
+                    </div>`;
+            } else {
+                // Scroll in fondo alla chat
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }, (error) => {
-            console.error("Errore nel caricamento messaggi:", error);
+        }, (err) => {
+            console.error("Errore listener messaggi:", err);
         });
+}
+
+/**
+ * Helper: Disegna un singolo messaggio nel container
+ */
+function renderSingleMessage(text, isMe) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `flex ${isMe ? 'justify-end' : 'justify-start'} mb-3`;
+    msgDiv.innerHTML = `
+        <div class="max-w-[75%] p-3 rounded-2xl shadow-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-gray-200 text-gray-800 rounded-tl-none'}">
+            <p class="text-sm leading-relaxed">${text}</p>
+        </div>
+    `;
+    messagesContainer.appendChild(msgDiv);
+}
+
+/**
+ * Helper: Gestione UI ricerca
+ */
+function renderSearchResults(users) {
+    searchResultsContainer.innerHTML = '';
+    if (users.length > 0) {
+        users.forEach(user => {
+            const div = document.createElement('div');
+            div.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0 text-gray-700 font-medium transition-colors';
+            div.textContent = user.username;
+            div.onclick = () => {
+                startNewChat(user.username);
+                userSearchInput.value = '';
+                hideSearchResults();
+            };
+            searchResultsContainer.appendChild(div);
+        });
+        searchResultsContainer.classList.remove('hidden');
+    } else {
+        searchResultsContainer.innerHTML = '<div class="p-3 text-gray-400 italic text-sm text-center">Nessun utente trovato</div>';
+        searchResultsContainer.classList.remove('hidden');
+    }
+}
+
+function hideSearchResults() {
+    searchResultsContainer.innerHTML = '';
+    searchResultsContainer.classList.add('hidden');
 }
