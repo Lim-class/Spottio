@@ -12,6 +12,9 @@ if (!firebase.apps.length) {
 }
 const db = firebase.firestore();
 
+// PULIZIA: Rimuove i vecchi dati locali che creano confusione
+localStorage.removeItem('users'); 
+
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const searchResultsContainer = document.getElementById('search-results-container');
@@ -24,14 +27,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function listenToUsers() {
         // Mostra un messaggio di caricamento iniziale
         searchResultsContainer.innerHTML = `
-            <p class="text-gray-500 text-center text-lg">Caricamento database utenti...</p>
+            <div class="flex flex-col items-center justify-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
+                <p class="text-gray-500 text-lg">Sincronizzazione con il database...</p>
+            </div>
         `;
 
         db.collection("users").onSnapshot((querySnapshot) => {
             allUsers = [];
             querySnapshot.forEach((doc) => {
                 const userData = doc.data();
-                // Assicuriamoci di catturare l'ID e i dati
                 allUsers.push({ 
                     id: doc.id, 
                     username: userData.username || "", 
@@ -39,55 +44,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
             
-            console.log("Utenti totali caricati:", allUsers.length);
+            console.log("Utenti trovati in Firebase:", allUsers.length);
 
-            // Se l'utente non sta scrivendo nulla, mostra il messaggio di invito alla ricerca
+            // Mostra SUBITO tutti gli utenti, senza aspettare la ricerca
             if (searchInput.value.trim() === '') {
-                searchResultsContainer.innerHTML = `
-                    <p class="text-gray-500 text-center text-lg">Inizia a digitare per cercare tra i ${allUsers.length} utenti.</p>
-                `;
+                displayResults(allUsers);
             } else {
-                // Se c'è già del testo (es. aggiornamento dati durante ricerca), rifiltra
                 performSearch(searchInput.value);
             }
+
         }, (error) => {
             console.error("Errore Firebase Firestore:", error);
             searchResultsContainer.innerHTML = `
-                <p class="text-red-500 text-center text-lg">Errore: assicurati che le regole di lettura su Firebase siano pubbliche.</p>
+                <div class="p-4 bg-red-100 text-red-700 rounded-lg text-center">
+                    <p class="font-bold">Errore di connessione</p>
+                    <p>Impossibile caricare gli utenti. Verifica la tua connessione o le regole di Firebase.</p>
+                </div>
             `;
         });
     }
 
     /**
-     * 2. Funzione per visualizzare i risultati della ricerca
+     * 2. Funzione per visualizzare i risultati
      */
     function displayResults(users) {
         searchResultsContainer.innerHTML = ''; 
 
         if (users.length === 0) {
             searchResultsContainer.innerHTML = `
-                <p class="text-gray-500 text-center text-lg">Nessun utente trovato con questo nome.</p>
+                <p class="text-gray-500 text-center text-lg py-4">Nessun utente trovato nel database.</p>
             `;
             return;
         }
 
+        // Creiamo la griglia/lista degli utenti
         users.forEach(user => {
             const nameToDisplay = user.username || "Utente senza nome";
             
             const userCard = document.createElement('div');
-            userCard.className = 'flex items-center p-4 bg-gray-50 rounded-lg shadow-sm hover:bg-gray-100 transition duration-200 cursor-pointer border border-transparent hover:border-blue-300';
+            userCard.className = 'flex items-center p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition duration-200 cursor-pointer border border-gray-100 hover:border-blue-300 mb-3';
             userCard.innerHTML = `
-                <div class="h-12 w-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4 shadow-sm">
+                <div class="h-12 w-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4 shadow-sm shrink-0">
                     ${nameToDisplay.charAt(0).toUpperCase()}
                 </div>
-                <div>
+                <div class="flex-grow">
                     <h3 class="font-semibold text-gray-900 text-lg">${nameToDisplay}</h3>
-                    <p class="text-xs text-gray-400">ID: ${user.id.substring(0, 8)}...</p>
+                    <p class="text-xs text-gray-400">Utente verificato</p>
                 </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
             `;
             
             userCard.addEventListener('click', () => {
-                // Salva lo username e l'ID profilo nel localStorage per la pagina utente.html
+                // Salva dati per la pagina profilo
                 localStorage.setItem('currentUserProfile', nameToDisplay);
                 localStorage.setItem('currentUserProfileId', user.id); 
                 window.location.href = 'utente.html';
@@ -104,13 +114,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchTerm = term.toLowerCase().trim();
         
         if (searchTerm === '') {
-            searchResultsContainer.innerHTML = `
-                <p class="text-gray-500 text-center text-lg">Inizia a digitare per cercare tra i ${allUsers.length} utenti.</p>
-            `;
+            // Se cancelli la ricerca, rimostra tutti
+            displayResults(allUsers);
             return;
         }
 
-        // Filtra la lista locale
         const filteredUsers = allUsers.filter(user => {
             const username = (user.username || "").toLowerCase();
             return username.includes(searchTerm);
