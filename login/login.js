@@ -13,9 +13,17 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Helper per convertire username in finta email (uguale alla MainActivity.java)
-function usernameToEmail(username) {
-    return username.toLowerCase().trim() + "@spottio.it";
+/**
+ * Funzione per processare l'input del nome utente.
+ * Se l'input contiene già '@', viene restituito così com'è.
+ * Altrimenti, viene generata una email fittizia @spottio.it.
+ */
+function processUserInput(input) {
+    const trimmedInput = input.trim();
+    if (trimmedInput.includes('@')) {
+        return trimmedInput;
+    }
+    return trimmedInput.toLowerCase() + "@spottio.it";
 }
 
 // Inizializza lingua all'avvio (Logica originale mantenuta)
@@ -29,18 +37,21 @@ window.onload = function() {
 // --- LOGICA LOGIN ---
 document.getElementById('loginForm').addEventListener('submit', function(event) {
     event.preventDefault();
-    const username = document.getElementById('login-username').value;
+    const userInput = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
-    const fakeEmail = usernameToEmail(username);
+    
+    // Decide se usare l'email inserita o generarne una finta
+    const emailToUse = processUserInput(userInput);
     const lang = localStorage.getItem('language') || 'it';
 
-    auth.signInWithEmailAndPassword(fakeEmail, password)
+    auth.signInWithEmailAndPassword(emailToUse, password)
         .then((userCredential) => {
             // Successo
             if (typeof showMessage === 'function') {
                 showMessage(translations[lang].loginSuccess);
             }
-            localStorage.setItem('currentUser', username);
+            // Salviamo l'input originale per la sessione
+            localStorage.setItem('currentUser', userInput);
             setTimeout(() => {
                 window.location.href = 'pubblici.html';
             }, 1000);
@@ -61,18 +72,20 @@ document.getElementById('loginForm').addEventListener('submit', function(event) 
 // --- LOGICA REGISTRAZIONE ---
 document.getElementById('signupForm').addEventListener('submit', function(event) {
     event.preventDefault();
-    const username = document.getElementById('signup-username').value;
+    const userInput = document.getElementById('signup-username').value;
     const password = document.getElementById('signup-password').value;
-    const fakeEmail = usernameToEmail(username);
+    
+    // Decide se usare l'email inserita o generarne una finta
+    const emailToUse = processUserInput(userInput);
     const lang = localStorage.getItem('language') || 'it';
 
-    auth.createUserWithEmailAndPassword(fakeEmail, password)
+    auth.createUserWithEmailAndPassword(emailToUse, password)
         .then((userCredential) => {
             const user = userCredential.user;
             // Salva profilo su Firestore (collezione 'users')
             return db.collection("users").doc(user.uid).set({
-                username: username,
-                email: fakeEmail,
+                username: userInput,
+                email: emailToUse,
                 bio: "Ciao, sono nuovo su Spottio!",
                 isAdmin: false,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -84,7 +97,7 @@ document.getElementById('signupForm').addEventListener('submit', function(event)
             }
             setTimeout(() => {
                 toggleForms(true);
-                document.getElementById('login-username').value = username;
+                document.getElementById('login-username').value = userInput;
             }, 1500);
         })
         .catch((error) => {
@@ -101,7 +114,7 @@ document.getElementById('signupForm').addEventListener('submit', function(event)
         });
 });
 
-// --- LOGICA UI (Originale Spottio) ---
+// --- LOGICA UI ---
 
 function toggleForms(showLogin) {
     if (showLogin) {
