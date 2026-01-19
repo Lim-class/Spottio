@@ -3,16 +3,17 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-// Configurazione Firebase (Sostituisci con i tuoi dati dalla console Firebase)
+// --- CONFIGURAZIONE FIREBASE ---
 const firebaseConfig = {
-    apiKey: "IL_TUO_API_KEY",
+    apiKey: "LA_TUA_API_KEY",
     authDomain: "IL_TUO_PROGETTO.firebaseapp.com",
     projectId: "IL_TUO_PROGETTO",
     storageBucket: "IL_TUO_PROGETTO.appspot.com",
-    messagingSenderId: "ID_SENDER",
-    appId: "ID_APP"
+    messagingSenderId: "IL_TUO_SENDER_ID",
+    appId: " IL_TUO_APP_ID"
 };
 
+// Inizializzazione
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -25,102 +26,104 @@ document.addEventListener('DOMContentLoaded', () => {
     const profilePreview = document.getElementById('profile-preview');
     const statusMessage = document.getElementById('status-message');
 
-    // Funzione per visualizzare i dati nel DOM
-    function renderProfileUI(data) {
-        if (data) {
-            let contentHtml = '<h3 class="text-2xl font-bold text-gray-800 mb-4">Profilo attuale</h3>';
-            const imgSrc = data.image || "https://placehold.co/192x192/EBF4FF/4A90E2?text=P";
-            
-            contentHtml += `<img src="${imgSrc}" alt="Profilo" class="mx-auto rounded-full w-48 h-48 object-cover mb-4 shadow-md">`;
-            
-            if (data.caption) {
-                contentHtml += `
-                    <div class="mt-4 p-4 bg-gray-100 rounded-lg">
-                        <p class="text-center italic text-gray-600">"${data.caption}"</p>
-                    </div>
-                `;
-            }
-            profilePreview.innerHTML = contentHtml;
-            profilePreview.style.display = 'block';
-            imageCaptionTextarea.value = data.caption || '';
-        } else {
-            profilePreview.style.display = 'none';
-        }
+    // Mostra un messaggio di stato temporaneo
+    function showStatus(text, isError = false) {
+        statusMessage.textContent = text;
+        statusMessage.className = `mt-4 text-center text-sm font-medium ${isError ? 'text-red-600' : 'text-green-600'}`;
+        statusMessage.style.display = 'block';
+        setTimeout(() => statusMessage.style.display = 'none', 4000);
     }
 
-    // Carica il profilo da Firestore
+    // Carica e visualizza i dati del profilo da Firebase
     async function loadProfile(user) {
         try {
             const docRef = doc(db, "users", user.uid);
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
-                renderProfileUI(docSnap.data());
-            } else {
-                renderProfileUI(null);
+                const profile = docSnap.data();
+                
+                let contentHtml = '<h3 class="text-2xl font-bold text-gray-800 mb-4">Profilo attuale</h3>';
+                const imgSrc = profile.image || "https://placehold.co/192x192/EBF4FF/4A90E2?text=P";
+                
+                contentHtml += `<img src="${imgSrc}" alt="Profilo" class="mx-auto rounded-full w-48 h-48 object-cover mb-4 shadow-md">`;
+                
+                if (profile.caption) {
+                    contentHtml += `
+                        <div class="mt-4 p-4 bg-gray-100 rounded-lg">
+                            <p class="text-center italic text-gray-600">"${profile.caption}"</p>
+                        </div>
+                    `;
+                }
+                
+                profilePreview.innerHTML = contentHtml;
+                profilePreview.style.display = 'block';
+                imageCaptionTextarea.value = profile.caption || '';
             }
         } catch (error) {
-            console.error("Errore caricamento:", error);
+            console.error("Errore nel caricamento profilo:", error);
         }
     }
 
-    // Monitora lo stato dell'utente (Loggato o no)
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            loadProfile(user);
-        } else {
-            console.log("Nessun utente loggato");
-            profilePreview.style.display = 'none';
-        }
-    });
-
-    // Gestione Invio Form
+    // Gestore invio form
     if (profileForm) {
         profileForm.addEventListener('submit', async (event) => {
             event.preventDefault();
+            
             const user = auth.currentUser;
-
             if (!user) {
-                alert("Devi effettuare l'accesso per salvare il profilo.");
+                showStatus("Devi essere loggato per salvare!", true);
                 return;
             }
 
             const file = profileImageInput.files[0];
             const caption = imageCaptionTextarea.value.trim();
-            let imageUrl = null;
 
             try {
-                statusMessage.textContent = 'Salvataggio in corso...';
-                statusMessage.className = 'mt-4 text-blue-600 font-medium';
-                statusMessage.style.display = 'block';
+                showStatus("Salvataggio in corso...", false);
+                let imageUrl = null;
 
-                // 1. Caricamento Immagine se presente
+                // 1. Se l'utente ha selezionato un file, caricalo su Storage
                 if (file) {
-                    const storageRef = ref(storage, `profiles/${user.uid}/avatar.jpg`);
-                    const snapshot = await uploadBytes(storageRef, file);
-                    imageUrl = await getDownloadURL(snapshot.ref);
+                    // Creiamo un riferimento unico: cartella 'profiles' / 'ID_UTENTE' / 'nome_file'
+                    const storageRef = ref(storage, `profiles/${user.uid}/${file.name}`);
+                    const uploadResult = await uploadBytes(storageRef, file);
+                    imageUrl = await getDownloadURL(uploadResult.ref);
                 }
 
-                // 2. Salvataggio dati su Firestore
-                const profileData = {
+                // 2. Prepariamo i dati per Firestore
+                const userData = {
                     caption: caption,
-                    updatedAt: new Date()
+                    lastUpdate: new Date()
                 };
-                if (imageUrl) profileData.image = imageUrl;
-
-                await setDoc(doc(db, "users", user.uid), profileData, { merge: true });
-
-                // Successo
-                statusMessage.textContent = 'Profilo aggiornato con successo!';
-                statusMessage.className = 'mt-4 text-green-600 font-medium';
-                loadProfile(user);
                 
-                setTimeout(() => statusMessage.style.display = 'none', 3000);
+                // Aggiungiamo l'URL dell'immagine solo se è stata caricata
+                if (imageUrl) {
+                    userData.image = imageUrl;
+                }
+
+                // 3. Salviamo su Firestore nel documento dedicato all'utente
+                await setDoc(doc(db, "users", user.uid), userData, { merge: true });
+
+                showStatus("Profilo aggiornato con successo!");
+                loadProfile(user); // Ricarica l'anteprima
+                profileForm.reset(); // Pulisce il selettore file
+
             } catch (error) {
-                console.error("Errore salvataggio:", error);
-                statusMessage.textContent = 'Errore durante il salvataggio.';
-                statusMessage.className = 'mt-4 text-red-600 font-medium';
+                console.error("Errore durante il salvataggio:", error);
+                showStatus("Errore durante il caricamento. Riprova.", true);
             }
         });
     }
+
+    // Controlla se l'utente è loggato all'avvio
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            loadProfile(user);
+        } else {
+            profilePreview.style.display = 'none';
+            // Qui potresti reindirizzare l'utente alla pagina di login se necessario
+            // window.location.href = 'index.html';
+        }
+    });
 });
