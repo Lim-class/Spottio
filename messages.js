@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
  * Configura gli eventi di interazione dell'utente
  */
 function setupEventListeners() {
-    // Ricerca Utenti dinamica
+    // Ricerca Utenti dinamica migliorata
     userSearchInput.addEventListener('input', async (e) => {
         const searchTerm = e.target.value.toLowerCase().trim();
         
@@ -61,22 +61,34 @@ function setupEventListeners() {
         }
         
         try {
+            // Otteniamo tutti i documenti dalla collezione users
             const snapshot = await db.collection("users").get();
             const filteredUsers = [];
             
+            console.log("Ricerca in corso... Documenti totali in 'users':", snapshot.size);
+
             snapshot.forEach(doc => {
                 const data = doc.data();
-                // Controllo flessibile: usa username o ID del documento
-                const uname = (data.username || doc.id || "").toString();
+                const docId = doc.id;
+                const usernameField = data.username || "";
                 
-                if (uname.toLowerCase().includes(searchTerm) && uname !== currentUser.username) {
-                    filteredUsers.push({ id: doc.id, username: uname });
+                // Cerchiamo corrispondenze sia nel campo username che nell'ID del documento
+                const matchesUsername = usernameField.toString().toLowerCase().includes(searchTerm);
+                const matchesDocId = docId.toLowerCase().includes(searchTerm);
+                
+                // Nome finale da visualizzare (preferenza al campo username, poi ID)
+                const displayName = usernameField || docId;
+
+                // Escludiamo noi stessi dalla ricerca
+                if ((matchesUsername || matchesDocId) && displayName !== currentUser.username) {
+                    filteredUsers.push({ id: docId, username: displayName });
                 }
             });
 
+            console.log("Utenti filtrati trovati:", filteredUsers.length);
             renderSearchResults(filteredUsers);
         } catch (err) {
-            console.error("Errore durante la ricerca utenti:", err);
+            console.error("Errore critico durante la ricerca utenti:", err);
         }
     });
 
@@ -103,7 +115,6 @@ function setupEventListeners() {
         };
 
         try {
-            // Svuota input subito per UX
             messageInput.value = '';
 
             // 1. Aggiungi il messaggio alla collezione globale 'chats'
@@ -119,7 +130,6 @@ function setupEventListeners() {
 
         } catch (err) {
             console.error("Errore nell'invio del messaggio:", err);
-            // In caso di errore, si potrebbe ripristinare il testo nell'input
         }
     });
 }
@@ -177,22 +187,17 @@ function listenToMyChats() {
  * Carica una conversazione specifica e attiva il listener dei messaggi
  */
 function startNewChat(recipientName) {
-    // Evita di ricaricare la stessa chat se è già attiva
     if (targetUser === recipientName && chatUnsubscribe) return;
-
-    // Pulisce il listener precedente
     if (chatUnsubscribe) chatUnsubscribe();
     
     targetUser = recipientName;
     chatRecipientName.textContent = recipientName;
     
-    // UI Updates
     chatHeader.classList.remove('hidden');
     messageForm.classList.remove('hidden');
     noChatMessage.classList.add('hidden');
     messagesContainer.innerHTML = '<div class="text-center p-10 text-gray-400 italic">Sincronizzazione messaggi...</div>';
 
-    // Listener messaggi (Filtro incrociato identico all'app Android)
     chatUnsubscribe = db.collection("chats")
         .orderBy("timestamp", "asc")
         .onSnapshot((snapshot) => {
@@ -201,8 +206,6 @@ function startNewChat(recipientName) {
 
             snapshot.forEach(doc => {
                 const msg = doc.data();
-                
-                // Filtro sicurezza: solo messaggi tra la coppia selezionata
                 const isFromMeToHim = msg.sender === currentUser.username && msg.receiver === targetUser;
                 const isFromHimToMe = msg.sender === targetUser && msg.receiver === currentUser.username;
 
@@ -219,7 +222,6 @@ function startNewChat(recipientName) {
                         <p class="mt-4 text-sm text-center">Inizia la tua conversazione con <strong>${targetUser}</strong>!</p>
                     </div>`;
             } else {
-                // Scroll in fondo alla chat
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
         }, (err) => {
