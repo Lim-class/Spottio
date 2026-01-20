@@ -1,10 +1,7 @@
 // public.js
 
-// Usiamo 'var' o semplicemente non la dichiariamo fuori per evitare il SyntaxError 
-// se il file viene caricato in contesti multipli.
-if (typeof postsCollection === 'undefined') {
-    var postsCollection; 
-}
+// Usiamo var per evitare errori di doppia dichiarazione
+var postsCollection;
 
 function initializeFirestore() {
     if (window.db) {
@@ -14,11 +11,10 @@ function initializeFirestore() {
     return false;
 }
 
-// Funzione che emula listenToFirestorePosts() del codice Java
 function listenToFirestorePosts() {
     if (!initializeFirestore()) {
-        console.error("Database non pronto, riprovo...");
-        setTimeout(listenToFirestorePosts, 200);
+        console.error("Database non ancora pronto, riprovo...");
+        setTimeout(listenToFirestorePosts, 500);
         return;
     }
 
@@ -28,34 +24,45 @@ function listenToFirestorePosts() {
     const currentUser = localStorage.getItem('currentUser') || "Guest";
     const isAdmin = currentUser === 'admin';
 
-    // Query identica a Java
+    // Ascolto in tempo reale (come addSnapshotListener in Java)
     postsCollection.orderBy("timestamp", "desc").onSnapshot((snapshot) => {
         postsContainer.innerHTML = ''; 
+
         snapshot.forEach((doc) => {
             const postData = doc.data();
             const postId = doc.id;
             renderPost(postId, postData, currentUser, isAdmin);
         });
     }, (error) => {
-        console.error("Errore Firestore:", error);
+        console.error("Errore nell'ascolto dei post:", error);
     });
 }
 
-// Funzione per visualizzare il post (Equivalente al metodo onBindViewHolder dell'Adapter Java)
 function renderPost(postId, post, currentUser, isAdmin) {
     const postsContainer = document.getElementById('posts-container');
     const postElement = document.createElement('div');
     postElement.className = 'bg-white p-6 rounded-2xl shadow-md post mb-6';
 
-    // Gestione Immagine (se presente nel database)
+    // --- GESTIONE SICURA DELLA DATA (Fix per l'errore toDate) ---
+    let dateDisplay = "Inviando...";
+    if (post.timestamp) {
+        try {
+            if (typeof post.timestamp.toDate === 'function') {
+                dateDisplay = post.timestamp.toDate().toLocaleString();
+            } else {
+                dateDisplay = new Date(post.timestamp).toLocaleString();
+            }
+        } catch (e) {
+            dateDisplay = "Data non valida";
+        }
+    }
+
     let mediaHtml = post.image ? `<img src="${post.image}" class="w-full h-auto rounded-lg mb-4">` : '';
 
-    // Logica Like
     const likes = post.likes || [];
     const hasLiked = likes.includes(currentUser);
     const likeColor = hasLiked ? 'text-red-500' : 'text-gray-500';
 
-    // Logica eliminazione (Uguale a Java: autore o admin)
     let deleteBtn = '';
     if (currentUser === post.username || isAdmin) {
         deleteBtn = `<button onclick="deletePost('${postId}')" class="text-red-500 hover:text-red-700 text-sm">Elimina</button>`;
@@ -65,11 +72,11 @@ function renderPost(postId, post, currentUser, isAdmin) {
         <div class="flex items-center mb-4">
             <img src="https://placehold.co/40x40/cccccc/000000?text=${post.username ? post.username[0].toUpperCase() : '?'}" class="w-10 h-10 rounded-full mr-3">
             <div>
-                <span class="font-semibold text-gray-800">${post.username}</span>
-                <p class="text-xs text-gray-500">${post.timestamp ? new Date(post.timestamp.toDate()).toLocaleString() : 'In caricamento...'}</p>
+                <span class="font-semibold text-gray-800">${post.username || 'Anonimo'}</span>
+                <p class="text-xs text-gray-500">${dateDisplay}</p>
             </div>
         </div>
-        <p class="text-gray-700 mb-4">${post.text}</p>
+        <p class="text-gray-700 mb-4">${post.text || ''}</p>
         ${mediaHtml}
         <div class="flex items-center justify-between border-t pt-4">
             <div class="flex items-center space-x-4">
@@ -84,18 +91,15 @@ function renderPost(postId, post, currentUser, isAdmin) {
     postsContainer.appendChild(postElement);
 }
 
-// --- AZIONI SUL DATABASE ---
-
+// Funzione per i Like
 function toggleLike(postId) {
     const currentUser = localStorage.getItem('currentUser');
-    if (!currentUser) return;
+    if (!currentUser) return alert("Esegui il login per mettere mi piace!");
 
     const postRef = postsCollection.doc(postId);
-    
-    // In Firestore Web usiamo una transazione o un update semplice
     postRef.get().then((doc) => {
-        const data = doc.data();
-        let likes = data.likes || [];
+        if (!doc.exists) return;
+        let likes = doc.data().likes || [];
         if (likes.includes(currentUser)) {
             likes = likes.filter(u => u !== currentUser);
         } else {
@@ -105,16 +109,12 @@ function toggleLike(postId) {
     });
 }
 
+// Funzione per eliminare
 function deletePost(postId) {
-    if (confirm("Vuoi eliminare definitivamente questo post?")) {
-        postsCollection.doc(postId).delete()
-            .then(() => console.log("Post rimosso dal Cloud"))
-            .catch(err => alert("Errore: " + err));
+    if (confirm("Sei sicuro di voler eliminare questo post?")) {
+        postsCollection.doc(postId).delete().catch(err => console.error("Errore: ", err));
     }
 }
 
-// Avvio al caricamento della pagina
+// Avvio
 document.addEventListener('DOMContentLoaded', listenToFirestorePosts);
-
-
-
