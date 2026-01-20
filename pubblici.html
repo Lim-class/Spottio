@@ -112,6 +112,25 @@
         </div>
     </div>
     <!-- Script JavaScript separato -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSy...",
+        authDomain: "tuo-progetto.firebaseapp.com",
+        projectId: "tuo-progetto",
+        storageBucket: "tuo-progetto.appspot.com",
+        messagingSenderId: "...",
+        appId: "..."
+      };
+      
+      firebase.initializeApp(firebaseConfig);
+      // Usiamo window.db per essere sicuri che sia visibile ovunque
+      window.db = firebase.firestore(); 
+      console.log("Firebase inizializzato correttamente");
+    </script>
+
     <script src="messaggi-posta/public.js"></script>
     <script src="messaggi-posta/reports.js"></script>
     <script src="ingresso_per_Gestione_Utenti/Ingresso_Gestione_Utenti.js"></script>
@@ -121,30 +140,7 @@
     <script src="NAV/traduzioni/fr.js"></script>
     <script src="NAV/language-dropdown.js"></script>
     <script src="NAV/nav.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
-<script>
-  // Sostituisci con i tuoi dati reali dalla console Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSy...",
-    authDomain: "tuo-progetto.firebaseapp.com",
-    projectId: "tuo-progetto",
-    storageBucket: "tuo-progetto.appspot.com",
-    messagingSenderId: "...",
-    appId: "..."
-  };
-
-  // Inizializza Firebase
-  firebase.initializeApp(firebaseConfig);
-  
-  // CREA LA VARIABILE GLOBALE db (Deve chiamarsi esattamente così)
-  var db = firebase.firestore(); 
-  console.log("Firebase inizializzato correttamente");
-</script>
-
-<script src="messaggi-posta/public.js"></script>
-<script src="messaggi-posta/reports.js"></script>
 </body>
 </html>
+
 
