@@ -42,14 +42,13 @@ function renderPost(postId, post, currentUser, isAdmin) {
     const postElement = document.createElement('div');
     postElement.className = 'bg-white p-6 rounded-2xl shadow-md post mb-6 border border-gray-100';
 
-    // Gestione della data
+    // ... (Logica data e media rimane invariata) ...
     let dateDisplay = "Data non disponibile";
     if (post.timestamp) {
         const dateObj = typeof post.timestamp === 'number' ? new Date(post.timestamp) : post.timestamp.toDate();
         dateDisplay = dateObj.toLocaleString();
     }
 
-    // Gestione Media (Immagini/Video)
     let mediaHtml = '';
     if (post.mediaUri) {
         if (post.isVideo) {
@@ -59,12 +58,10 @@ function renderPost(postId, post, currentUser, isAdmin) {
         }
     }
 
-    // Logica Like
     const likes = post.likes || [];
     const hasLiked = likes.includes(currentUser);
     const likeColor = hasLiked ? 'text-red-500' : 'text-gray-500';
 
-    // Logica Commenti
     const comments = post.comments || [];
     let commentsHtml = comments.map(c => `
         <div class="bg-gray-50 p-3 rounded-xl mb-2 text-sm border border-gray-200">
@@ -73,7 +70,6 @@ function renderPost(postId, post, currentUser, isAdmin) {
         </div>
     `).join('');
 
-    // Bottone elimina (Solo se proprietario o admin)
     let deleteBtn = '';
     if (currentUser === post.user || isAdmin) {
         deleteBtn = `<button onclick="deletePost('${postId}')" class="text-red-400 hover:text-red-600 transition">
@@ -96,21 +92,21 @@ function renderPost(postId, post, currentUser, isAdmin) {
         </div>
 
         <p class="text-gray-700 mb-4 leading-relaxed">${post.text}</p>
-        
         ${mediaHtml}
 
-        <div class="flex items-center space-x-6 border-t border-b py-3 mb-4">
+        <div class="flex items-center space-x-6 border-t py-3 mb-2">
             <button onclick="toggleLike('${postId}')" class="flex items-center space-x-2 ${likeColor} hover:scale-110 transition-transform">
                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                 <span class="font-medium">${likes.length}</span>
             </button>
-            <div class="flex items-center space-x-2 text-gray-500">
+            
+            <button onclick="toggleComments('${postId}')" class="flex items-center space-x-2 text-gray-500 hover:text-blue-600 transition">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
                 <span class="font-medium">${comments.length}</span>
-            </div>
+            </button>
         </div>
 
-        <div class="space-y-2">
+        <div id="comment-section-${postId}" class="hidden border-t pt-4 mt-2">
             <div id="comments-list-${postId}" class="max-h-60 overflow-y-auto custom-scrollbar">
                 ${commentsHtml}
             </div>
@@ -128,6 +124,16 @@ function renderPost(postId, post, currentUser, isAdmin) {
         </div>
     `;
     postsContainer.appendChild(postElement);
+}
+
+// Nuova funzione per mostrare/nascondere i commenti
+function toggleComments(postId) {
+    const section = document.getElementById(`comment-section-${postId}`);
+    if (section.classList.contains('hidden')) {
+        section.classList.remove('hidden');
+    } else {
+        section.classList.add('hidden');
+    }
 }
 
 // Funzione per aggiungere un commento
@@ -191,3 +197,4 @@ function deletePost(postId) {
 }
 
 document.addEventListener('DOMContentLoaded', listenToFirestorePosts);
+
