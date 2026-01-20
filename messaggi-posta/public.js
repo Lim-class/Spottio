@@ -2,26 +2,23 @@
 
 // Usiamo 'var' o semplicemente non la dichiariamo fuori per evitare il SyntaxError 
 // se il file viene caricato in contesti multipli.
-var postsCollection; 
+if (typeof postsCollection === 'undefined') {
+    var postsCollection; 
+}
 
 function initializeFirestore() {
-    // Controlliamo window.db per essere sicuri di pescare la variabile globale dell'HTML
-    if (typeof window.db !== 'undefined') {
+    if (window.db) {
         postsCollection = window.db.collection("posts");
-    } else if (typeof db !== 'undefined') {
-        postsCollection = db.collection("posts");
-    } else {
-        console.error("Errore: la variabile 'db' non è definita nell'HTML.");
-        return false;
+        return true;
     }
-    return true;
+    return false;
 }
 
 // Funzione che emula listenToFirestorePosts() del codice Java
 function listenToFirestorePosts() {
-    // Se l'inizializzazione fallisce, riprova tra 500ms (gestisce il ritardo di caricamento)
     if (!initializeFirestore()) {
-        setTimeout(listenToFirestorePosts, 500);
+        console.error("Database non pronto, riprovo...");
+        setTimeout(listenToFirestorePosts, 200);
         return;
     }
 
@@ -118,5 +115,6 @@ function deletePost(postId) {
 
 // Avvio al caricamento della pagina
 document.addEventListener('DOMContentLoaded', listenToFirestorePosts);
+
 
 
