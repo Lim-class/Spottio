@@ -1,39 +1,46 @@
-// Riferimento al database (inizializzato nell'HTML)
-let postsCollection;
+// public.js
+
+// Usiamo 'var' o semplicemente non la dichiariamo fuori per evitare il SyntaxError 
+// se il file viene caricato in contesti multipli.
+var postsCollection; 
 
 function initializeFirestore() {
-    if (typeof db !== 'undefined') {
+    // Controlliamo window.db per essere sicuri di pescare la variabile globale dell'HTML
+    if (typeof window.db !== 'undefined') {
+        postsCollection = window.db.collection("posts");
+    } else if (typeof db !== 'undefined') {
         postsCollection = db.collection("posts");
     } else {
-        console.error("Errore: la variabile 'db' non è definita. Controlla l'ordine degli script in HTML.");
+        console.error("Errore: la variabile 'db' non è definita nell'HTML.");
+        return false;
     }
+    return true;
 }
 
 // Funzione che emula listenToFirestorePosts() del codice Java
 function listenToFirestorePosts() {
-    initializeFirestore(); // <--- Aggiungi questo
-    if (!postsCollection) return;
+    // Se l'inizializzazione fallisce, riprova tra 500ms (gestisce il ritardo di caricamento)
+    if (!initializeFirestore()) {
+        setTimeout(listenToFirestorePosts, 500);
+        return;
+    }
 
     const postsContainer = document.getElementById('posts-container');
+    if (!postsContainer) return;
 
-    // Recupera l'utente attivo da localStorage (coerente con SpottioPrefs in Java)
     const currentUser = localStorage.getItem('currentUser') || "Guest";
-    // In Java usi un prefisso per isAdmin, qui semplifichiamo controllando se è 'admin'
     const isAdmin = currentUser === 'admin';
 
-    // Query identica a Java: ordinata per timestamp decrescente
+    // Query identica a Java
     postsCollection.orderBy("timestamp", "desc").onSnapshot((snapshot) => {
-        postsContainer.innerHTML = ''; // Svuota il contenitore (cloudPostList.clear())
-
+        postsContainer.innerHTML = ''; 
         snapshot.forEach((doc) => {
             const postData = doc.data();
-            const postId = doc.id; // Corrisponde a p.setPostId(doc.getId())
-
-            // Creazione dell'elemento post (simile al PostAdapter)
+            const postId = doc.id;
             renderPost(postId, postData, currentUser, isAdmin);
         });
     }, (error) => {
-        console.error("Errore durante l'ascolto dei post:", error);
+        console.error("Errore Firestore:", error);
     });
 }
 
@@ -111,4 +118,5 @@ function deletePost(postId) {
 
 // Avvio al caricamento della pagina
 document.addEventListener('DOMContentLoaded', listenToFirestorePosts);
+
 
