@@ -179,4 +179,48 @@ window.deletePost = function(postId) {
     }
 };
 
+// Funzione globale per pubblicare un nuovo post
+window.publishPost = function() {
+    const currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) {
+        alert("Devi aver effettuato l'accesso per pubblicare!");
+        return;
+    }
+
+    const postText = document.getElementById('post-input-text')?.value.trim();
+    const mediaInput = document.getElementById('post-input-media'); // Input di tipo file (opzionale)
+    
+    if (!postText && (!mediaInput || !mediaInput.files[0])) {
+        alert("Scrivi qualcosa o inserisci un'immagine!");
+        return;
+    }
+
+    // Struttura base del post
+    const newPost = {
+        user: currentUser,
+        text: postText,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(), // Usa il tempo del server
+        likes: [],
+        comments: [],
+        mediaUri: null, // Default
+        isVideo: false
+    };
+
+    // Se c'è un file media, dovresti caricarlo su Firebase Storage (opzionale)
+    // Per ora salviamo il post direttamente. Se hai un URL immagine (es. da un input testo), usalo qui.
+    
+    window.db.collection("posts").add(newPost)
+        .then(() => {
+            console.log("Post pubblicato con successo!");
+            // Pulisci i campi
+            if(document.getElementById('post-input-text')) document.getElementById('post-input-text').value = '';
+            if(mediaInput) mediaInput.value = '';
+        })
+        .catch((error) => {
+            console.error("Errore durante la pubblicazione:", error);
+            alert("Errore nel salvataggio del post.");
+        });
+};
+
 document.addEventListener('DOMContentLoaded', listenToFirestorePosts);
+
