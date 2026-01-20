@@ -1,24 +1,25 @@
 // Gestione Utenti con Firestore (Login, Registrazione, Admin, Sospensione)
 
-// Inizializza la lingua all'avvio
-window.onload = function() {
+// Usa DOMContentLoaded per evitare conflitti con altri script (es. nav.js)
+document.addEventListener('DOMContentLoaded', function() {
     const savedLang = localStorage.getItem('language') || 'it'; 
     if (typeof setLanguage !== 'undefined') {
         setLanguage(savedLang);
     }
-    // Avvia il listener solo se siamo nella pagina di gestione
+
+    // Avvia il listener solo se siamo nella pagina di gestione (se esiste la lista)
     if (document.getElementById('users-list')) {
-        listenToUsers();
+        // Piccolo ritardo per assicurarsi che window.db sia inizializzato
+        setTimeout(listenToUsers, 500); 
     }
-};
+});
 
 // Funzione per mostrare messaggi
 function showMessage(message, isError = false) {
     const messageContainer = document.getElementById('message-container');
     if (messageContainer) {
         messageContainer.innerHTML = `<p class="p-4 mb-6 rounded-xl font-medium text-sm text-center shadow-sm ${isError ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-green-700 border border-green-200'}">${message}</p>`;
-        // Rimuovi il messaggio dopo 3 secondi
-        setTimeout(() => messageContainer.innerHTML = '', 3000);
+        setTimeout(() => messageContainer.innerHTML = '', 4000);
     }
 }
 
@@ -29,120 +30,128 @@ document.getElementById('loginForm')?.addEventListener('submit', function(event)
     const password = document.getElementById('login-password').value.trim();
     const lang = localStorage.getItem('language') || 'it';
 
-    // Query a Firestore
+    if(!window.db) {
+        showMessage("Errore: Database non connesso.", true);
+        return;
+    }
+
     window.db.collection('users').where('username', '==', username).get()
         .then((querySnapshot) => {
             if (querySnapshot.empty) {
-                showMessage(translations[lang].loginError || "Utente non trovato", true);
+                showMessage(translations[lang]?.loginError || "Utente non trovato", true);
                 return;
             }
 
-            // Prendiamo il primo documento trovato (l'username dovrebbe essere univoco)
             const userDoc = querySnapshot.docs[0];
             const userData = userDoc.data();
 
-            // Verifica Password
             if (userData.password === password) {
-                // VERIFICA SE SOSPESO
                 if (userData.isSuspended) {
                     showMessage("Questo account è stato sospeso dall'amministratore.", true);
                     return;
                 }
 
-                showMessage(translations[lang].loginSuccess || "Login effettuato!");
+                showMessage(translations[lang]?.loginSuccess || "Login effettuato!");
                 localStorage.setItem('currentUser', username);
                 
-                // Se è admin, salva un flag (opzionale, per UI locale)
                 if (userData.isAdmin) {
                     localStorage.setItem('isAdmin', 'true');
                 } else {
                     localStorage.removeItem('isAdmin');
                 }
 
-                // Redirect
                 setTimeout(() => window.location.href = 'pubblici.html', 1000);
             } else {
-                showMessage(translations[lang].loginError || "Password errata", true);
+                showMessage(translations[lang]?.loginError || "Password errata", true);
             }
         })
         .catch((error) => {
             console.error("Errore Login:", error);
-            showMessage("Errore di connessione.", true);
+            showMessage("Errore durante l'accesso: " + error.message, true);
         });
 });
 
-// --- LOGICA DI REGISTRAZIONE (Pubblica) ---
+// --- LOGICA DI REGISTRAZIONE ---
 document.getElementById('signupForm')?.addEventListener('submit', function(event) {
     event.preventDefault();
     const username = document.getElementById('signup-username').value.trim();
     const password = document.getElementById('signup-password').value.trim();
     const lang = localStorage.getItem('language') || 'it';
 
+    if(!window.db) return;
     const usersRef = window.db.collection('users');
 
-    // Controlla duplicati
     usersRef.where('username', '==', username).get()
         .then((snapshot) => {
             if (!snapshot.empty) {
-                showMessage(translations[lang].signupUsernameExists || "Username già esistente", true);
+                showMessage(translations[lang]?.signupUsernameExists || "Username già esistente", true);
                 return;
             }
 
-            // Crea utente
             usersRef.add({
                 username: username,
                 password: password,
                 isAdmin: false,
-                isSuspended: false, // Default attivo
+                isSuspended: false,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             })
             .then(() => {
-                showMessage(translations[lang].signupSuccess || "Registrazione avvenuta!", false);
+                showMessage(translations[lang]?.signupSuccess || "Registrazione avvenuta!", false);
                 setTimeout(() => {
-                    toggleForms(true); // Torna al login
-                    document.getElementById('login-username').value = username;
+                    toggleForms(true);
+                    const loginInput = document.getElementById('login-username');
+                    if(loginInput) loginInput.value = username;
                 }, 1500);
             });
         })
-        .catch((err) => showMessage("Errore durante la registrazione", true));
+        .catch((err) => showMessage("Errore registrazione: " + err.message, true));
 });
 
-// Gestione toggle form Login/Signup
+// Toggle forms
 document.getElementById('show-signup')?.addEventListener('click', (e) => { e.preventDefault(); toggleForms(false); });
 document.getElementById('show-login')?.addEventListener('click', (e) => { e.preventDefault(); toggleForms(true); });
 
 
-// --- LOGICA AMMINISTRAZIONE (Gestione Utenti) ---
+// --- LOGICA AMMINISTRAZIONE (LISTA UTENTI) ---
 
-// Listener in tempo reale per la lista utenti
 function listenToUsers() {
     const spinner = document.getElementById('loading-spinner');
+    const usersList = document.getElementById('users-list');
+    
+    if(!window.db) {
+        if(usersList) usersList.innerHTML = '<p class="text-red-500 text-center p-4">Errore: Database non inizializzato.</p>';
+        return;
+    }
+
     if(spinner) spinner.classList.remove('hidden');
 
+    // Ascoltatore in tempo reale
     window.db.collection('users').orderBy('username').onSnapshot((snapshot) => {
-        const usersList = document.getElementById('users-list');
-        usersList.innerHTML = ''; // Pulisce
-        
+        usersList.innerHTML = ''; // Pulisce la lista
         if(spinner) spinner.classList.add('hidden');
+
+        if(snapshot.empty) {
+            usersList.innerHTML = '<p class="text-center p-4 text-gray-500">Nessun utente trovato nel database.</p>';
+            return;
+        }
 
         snapshot.forEach((doc) => {
             const user = doc.data();
             const docId = doc.id;
 
-            // Non mostrare l'admin principale se vuoi proteggerlo, oppure mostralo ma disabilita azioni
+            // Opzionale: Nascondi l'admin stesso dalla lista per evitare auto-cancellazione
             if (user.username === 'admin') return; 
 
             const userRow = document.createElement('div');
-            userRow.className = 'user-row flex items-center justify-between p-4 hover:bg-gray-50 transition';
+            userRow.className = 'user-row flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-100 last:border-0';
 
-            // Determina stile e testo bottone sospensione
             const suspendBtnText = user.isSuspended ? 'Sblocca' : 'Blocca';
             const suspendBtnClass = user.isSuspended 
                 ? 'bg-green-500 hover:bg-green-600 text-white' 
                 : 'bg-yellow-500 hover:bg-yellow-600 text-white';
             
             const suspendedBadge = user.isSuspended 
-                ? `<span class="badge-suspended">Sospeso</span>` 
+                ? `<span class="ml-2 bg-red-100 text-red-800 text-xs font-semibold px-2.5 py-0.5 rounded">Sospeso</span>` 
                 : '';
 
             userRow.innerHTML = `
@@ -163,19 +172,28 @@ function listenToUsers() {
             `;
             usersList.appendChild(userRow);
         });
-
-        if(snapshot.empty) {
-            usersList.innerHTML = '<p class="text-center p-4 text-gray-500">Nessun utente trovato.</p>';
+    }, (error) => {
+        // Gestione Errori Visibile
+        console.error("Errore recupero utenti:", error);
+        if(spinner) spinner.classList.add('hidden');
+        if (usersList) {
+            usersList.innerHTML = `
+                <div class="p-4 text-red-600 bg-red-50 rounded-lg text-center border border-red-200">
+                    <p class="font-bold">Impossibile caricare gli utenti</p>
+                    <p class="text-sm mt-1">${error.message}</p>
+                    <p class="text-xs mt-2 text-gray-500">Verifica la connessione o i permessi del database.</p>
+                </div>`;
         }
     });
 }
 
-// Aggiungi utente da pannello Admin
+// Aggiungi utente (Admin)
 document.getElementById('addUserForm')?.addEventListener('submit', function(event) {
     event.preventDefault();
     const username = document.getElementById('new-username').value.trim();
     const password = document.getElementById('new-password').value.trim();
 
+    if(!window.db) return;
     const usersRef = window.db.collection('users');
 
     usersRef.where('username', '==', username).get().then(snapshot => {
@@ -194,24 +212,19 @@ document.getElementById('addUserForm')?.addEventListener('submit', function(even
             showMessage(`Utente ${username} aggiunto!`, false);
             document.getElementById('addUserForm').reset();
         });
-    });
+    }).catch(err => showMessage("Errore: " + err.message, true));
 });
 
-// Sospendi / Riattiva Utente
+// Sospendi / Sblocca
 window.toggleSuspendUser = function(docId, currentStatus) {
-    // Inverte lo stato
     window.db.collection('users').doc(docId).update({
         isSuspended: !currentStatus
     })
-    .then(() => {
-        // Il listener aggiornerà la UI automaticamente
-        const action = !currentStatus ? "bloccato" : "sbloccato";
-        console.log(`Utente ${action} con successo`);
-    })
-    .catch(err => showMessage("Errore aggiornamento stato utente", true));
+    .then(() => console.log("Stato utente aggiornato"))
+    .catch(err => showMessage("Errore modifica stato: " + err.message, true));
 };
 
-// Modale Eliminazione
+// Cancellazione Utente
 let userToDeleteId = null;
 
 window.confirmDeleteUser = function(docId, username) {
@@ -222,13 +235,16 @@ window.confirmDeleteUser = function(docId, username) {
     if (userSpan) userSpan.textContent = username;
     if (modal) {
         modal.classList.remove('hidden');
-        modal.style.display = 'flex'; // Fix per alcuni layout CSS
+        modal.style.display = 'block'; // Forza display block per visibilità
     }
 };
 
 document.getElementById('cancel-delete')?.addEventListener('click', () => {
-    document.getElementById('confirmation-modal').classList.add('hidden');
-    document.getElementById('confirmation-modal').style.display = 'none';
+    const modal = document.getElementById('confirmation-modal');
+    if(modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
     userToDeleteId = null;
 });
 
@@ -237,9 +253,12 @@ document.getElementById('confirm-delete')?.addEventListener('click', () => {
         window.db.collection('users').doc(userToDeleteId).delete()
             .then(() => {
                 showMessage("Utente eliminato.", false);
-                document.getElementById('confirmation-modal').classList.add('hidden');
-                document.getElementById('confirmation-modal').style.display = 'none';
+                const modal = document.getElementById('confirmation-modal');
+                if(modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                }
             })
-            .catch(err => showMessage("Errore eliminazione utente", true));
+            .catch(err => showMessage("Errore eliminazione: " + err.message, true));
     }
 });
