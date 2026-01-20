@@ -1,4 +1,3 @@
-<!-- gestione-utenti.html -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -12,9 +11,8 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
-            transition: background-color 0.3s ease; /* Aggiunge una transizione fluida per il cambio colore */
+            transition: background-color 0.3s ease;
         }
-        /* Stili per le righe della tabella */
         .user-row {
             border-bottom: 1px solid #e5e7eb;
             padding: 1rem 0;
@@ -25,15 +23,15 @@
         .user-row:last-child {
             border-bottom: none;
         }
-        .modal-body {
-            padding: 1.5rem;
-            text-align: center;
-        }
-        .modal-footer {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            padding: 1rem;
+        /* Badge per utenti sospesi */
+        .badge-suspended {
+            background-color: #fee2e2;
+            color: #991b1b;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
         }
     </style>
 </head>
@@ -43,24 +41,23 @@
         <h2 id="menu-title" class="text-2xl font-bold text-gray-800 mb-6">Menu</h2>
         <div id="nav-container"></div>
         <div class="mt-auto pt-6 flex flex-col items-start w-full space-y-4 relative">
-            <!-- Pulsante che apre il dropdown -->
             <div class="relative">
                 <button id="language-toggle" class="flex items-center text-lg font-medium text-gray-600 hover:text-blue-600 hover:bg-gray-100 p-2 rounded-lg transition duration-200 focus:outline-none">
                     <img id="selected-flag" src="https://flagcdn.com/it.svg" alt="Bandiera Italiana" class="h-4 w-6 mr-2">
                     <span id="selected-lang-text">Italiano</span>
-                    <svg id="dropdown-icon" class="w-4 h-4 ml-2 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    <svg id="dropdown-icon" class="w-4 h-4 ml-2 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
-                <!-- Contenitore per il menu a tendina delle lingue -->
                 <div id="language-dropdown-container"></div>
             </div>
             <a href="index.html" id="logout-link" class="text-lg font-medium text-red-600 hover:underline transition duration-200" data-translate="logout">Esci</a>
         </div>
     </div>
-    <!-- Contenuto a destra specifico per la pagina "Gestione Utenti" -->
+
+    <!-- Contenuto a destra -->
     <div class="flex-grow p-8 flex justify-center">
         <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl">
             <h2 class="text-4xl font-bold text-gray-800 mb-4">Gestione Utenti</h2>
-            <p class="text-gray-600 mb-6">Visualizza, aggiungi ed elimina utenti.</p>
+            <p class="text-gray-600 mb-6">Visualizza, aggiungi, blocca ed elimina utenti.</p>
             
             <!-- Messaggio di errore/successo -->
             <div id="message-container" class="mb-4"></div>
@@ -71,48 +68,70 @@
                 <form id="addUserForm" class="space-y-4">
                     <div>
                         <label for="new-username" class="block text-sm font-medium text-gray-700">Nome Utente</label>
-                        <input type="text" id="new-username" name="new-username" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+                        <input type="text" id="new-username" name="new-username" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 border">
                     </div>
                     <div>
                         <label for="new-password" class="block text-sm font-medium text-gray-700">Password</label>
-                        <input type="password" id="new-password" name="new-password" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+                        <input type="password" id="new-password" name="new-password" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 border">
                     </div>
-                    <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <button type="submit" class="w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
                         Aggiungi Utente
                     </button>
                 </form>
             </div>
 
             <!-- Lista utenti -->
-            <h3 class="text-2xl font-bold text-gray-800 mb-4">Elenco Utenti</h3>
-            <div id="users-list" class="bg-white rounded-lg shadow-lg divide-y divide-gray-200">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-gray-800">Elenco Utenti</h3>
+                <div id="loading-spinner" class="hidden animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            </div>
+            
+            <div id="users-list" class="bg-white rounded-lg shadow-lg divide-y divide-gray-200 border border-gray-100 p-2">
                 <!-- Le righe degli utenti verranno popolate qui dal JS -->
             </div>
 
             <!-- Modale di conferma per l'eliminazione -->
-            <div id="confirmation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
-                <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+                <div class="relative top-20 mx-auto p-5 border w-96 shadow-2xl rounded-2xl bg-white">
                     <div class="mt-3 text-center">
                         <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.332 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.332 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                         </div>
-                        <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">Conferma Eliminazione</h3>
+                        <h3 class="text-xl leading-6 font-bold text-gray-900 mt-4">Conferma Eliminazione</h3>
                         <div class="mt-2 px-7 py-3">
                             <p class="text-sm text-gray-500">Sei sicuro di voler eliminare l'utente <span id="user-to-delete" class="font-bold"></span>?</p>
                         </div>
-                        <div class="items-center px-4 py-3">
-                            <button id="confirm-delete" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
-                                Elimina
-                            </button>
-                            <button id="cancel-delete" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm">
-                                Annulla
-                            </button>
+                        <div class="flex space-x-3 px-4 py-3">
+                            <button id="cancel-delete" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-xl w-full hover:bg-gray-300 transition">Annulla</button>
+                            <button id="confirm-delete" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-xl w-full shadow-sm hover:bg-red-700 transition">Elimina</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+      // Configurazione Firebase
+      const firebaseConfig = {
+        apiKey: "AIzaSyAx_wHQ_K_B0lUSLUQLNupdX8krn0iiHtA",
+        authDomain: "spottio-1419e.firebaseapp.com",
+        projectId: "spottio-1419e",
+        storageBucket: "spottio-1419e.firebasestorage.app",
+        messagingSenderId: "148386866465",
+        appId: "1:148386866465:web:..." 
+      };
+      
+      if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+      }
+      window.db = firebase.firestore();
+    </script>
+
     <!-- Script JavaScript -->
     <script src="gestione-utenti/gestione-utenti.js"></script>
     <script src="ingresso_per_Gestione_Utenti/Ingresso_Gestione_Utenti.js"></script>
@@ -122,6 +141,5 @@
     <script src="NAV/traduzioni/fr.js"></script>
     <script src="NAV/language-dropdown.js"></script>
     <script src="NAV/nav.js"></script>
-
 </body>
 </html>
