@@ -1,10 +1,20 @@
 // Riferimento al database (inizializzato nell'HTML)
-const postsCollection = db.collection("posts");
+let postsCollection;
+
+function initializeFirestore() {
+    if (typeof db !== 'undefined') {
+        postsCollection = db.collection("posts");
+    } else {
+        console.error("Errore: la variabile 'db' non è definita. Controlla l'ordine degli script in HTML.");
+    }
+}
 
 // Funzione che emula listenToFirestorePosts() del codice Java
 function listenToFirestorePosts() {
+    initializeFirestore(); // <--- Aggiungi questo
+    if (!postsCollection) return;
+
     const postsContainer = document.getElementById('posts-container');
-    if (!postsContainer) return;
 
     // Recupera l'utente attivo da localStorage (coerente con SpottioPrefs in Java)
     const currentUser = localStorage.getItem('currentUser') || "Guest";
@@ -101,3 +111,4 @@ function deletePost(postId) {
 
 // Avvio al caricamento della pagina
 document.addEventListener('DOMContentLoaded', listenToFirestorePosts);
+
