@@ -14,28 +14,22 @@
             background-color: #f3f4f6;
             transition: background-color 0.3s ease;
         }
+        /* Scrollbar personalizzata */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+        
         .post { transition: transform 0.2s ease; }
+        
+        /* Modali */
         #report-modal { display: none; }
         #report-modal.open { display: flex; }
         #posts-container .hidden { display: none;}
+        
+        /* Animazioni */
         [id^="comment-section-"] { animation: fadeIn 0.3s ease-in-out;}
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); }}
-        
-        /* Loader per il bottone pubblica */
-        .loader {
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #3498db;
-            border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="flex min-h-screen">
@@ -61,27 +55,12 @@
         <div class="w-full max-w-2xl">
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-4xl font-bold text-gray-800">Post Pubblici</h2>
+                <a href="posta.html" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition shadow-md flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Crea Post
+                </a>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl shadow-md mb-8 border border-gray-100">
-                <textarea id="post-text" rows="3" class="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 resize-none" placeholder="A cosa stai pensando?"></textarea>
-                
-                <div class="flex items-center justify-between mt-4">
-                    <div class="flex items-center space-x-2">
-                        <label for="file-upload" class="cursor-pointer flex items-center text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-lg transition">
-                            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                            <span class="text-sm font-medium">Foto/Video</span>
-                        </label>
-                        <input id="file-upload" type="file" class="hidden" accept="image/*,video/*" onchange="document.getElementById('file-name').textContent = this.files[0] ? this.files[0].name : ''">
-                        <span id="file-name" class="text-xs text-gray-500 truncate max-w-[150px]"></span>
-                    </div>
-
-                    <button onclick="publishPost()" type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-md hover:bg-blue-700 transition transform hover:scale-105 active:scale-95">
-                        Pubblica post
-                    </button>
-                </div>
-                <div id="status-message" style="display:none;"></div>
-            </div>
             <div id="posts-container">
                 <div class="flex justify-center py-10">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -144,12 +123,13 @@
         apiKey: "AIzaSyAx_wHQ_K_B0lUSLUQLNupdX8krn0iiHtA",
         authDomain: "spottio-1419e.firebaseapp.com",
         projectId: "spottio-1419e",
-        storageBucket: "spottio-1419e.firebasestorage.app", // Assicurati che questo bucket sia abilitato in console
+        storageBucket: "spottio-1419e.firebasestorage.app",
       };
       
-      firebase.initializeApp(firebaseConfig);
+      if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+      }
       window.db = firebase.firestore();
-      window.storage = firebase.storage(); // Inizializzazione Storage
     </script>
 
     <script src="messaggi-posta/public.js"></script>
