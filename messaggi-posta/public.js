@@ -43,7 +43,7 @@ function renderPost(postId, post, currentUser, isAdmin) {
 
     // --- FIX 1: Gestione Nome Utente (Fallback se manca) ---
     // Se post.user esiste lo usa, altrimenti scrive "Utente Sconosciuto"
-    const authorName = post.user || "Utente Sconosciuto";
+    const authorName = post.author || "Utente Sconosciuto"; 
     const authorInitial = authorName[0] ? authorName[0].toUpperCase() : '?';
 
     // Gestione Data
@@ -72,14 +72,12 @@ function renderPost(postId, post, currentUser, isAdmin) {
 
     // --- FIX 2: Gestione Commenti (Fallback anche qui) ---
     const comments = post.comments || [];
-    let commentsHtml = comments.map(c => {
-        const commentUser = c.user || "Anonimo"; // Protezione per i commenti
-        return `
+    let commentsHtml = comments.map(c => `
         <div class="bg-gray-50 p-3 rounded-xl mb-2 text-sm border border-gray-200">
-            <span class="font-bold text-blue-600">${commentUser}:</span> 
+            <span class="font-bold text-blue-600">${c.author || "Anonimo"}:</span> 
             <span class="text-gray-700">${c.text}</span>
         </div>
-    `}).join('');
+    `).join('');
 
     // Bottone Elimina (Solo Admin o Autore)
     // Nota: usiamo authorName (o post.user) per il controllo
@@ -163,7 +161,7 @@ window.addComment = function(postId) {
     if (!inputField || !inputField.value.trim()) return;
 
     const newComment = {
-        user: currentUser,
+        author: currentUser,
         text: inputField.value.trim(),
         timestamp: Date.now()
     };
@@ -311,4 +309,5 @@ window.publishPost = function() {
 
 // Inizializza l'ascoltatore solo se siamo nella pagina di visualizzazione
 document.addEventListener('DOMContentLoaded', listenToFirestorePosts);
+
 
