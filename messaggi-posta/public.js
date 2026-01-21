@@ -41,9 +41,15 @@ function renderPost(postId, post, currentUser, isAdmin) {
     const postElement = document.createElement('div');
     postElement.className = 'bg-white p-6 rounded-2xl shadow-md post mb-6 border border-gray-100 transition duration-300 hover:shadow-lg';
 
+    // --- FIX 1: Gestione Nome Utente (Fallback se manca) ---
+    // Se post.user esiste lo usa, altrimenti scrive "Utente Sconosciuto"
+    const authorName = post.user || "Utente Sconosciuto";
+    const authorInitial = authorName[0] ? authorName[0].toUpperCase() : '?';
+
     // Gestione Data
     let dateDisplay = "Data non disponibile";
     if (post.timestamp) {
+        // Supporto sia per Timestamp di Firestore che per millisecondi numerici
         const dateObj = typeof post.timestamp === 'number' ? new Date(post.timestamp) : post.timestamp.toDate();
         dateDisplay = dateObj.toLocaleString();
     }
@@ -64,16 +70,19 @@ function renderPost(postId, post, currentUser, isAdmin) {
     const likeColor = hasLiked ? 'text-red-500' : 'text-gray-500';
     const likeIconFill = hasLiked ? 'currentColor' : 'none';
 
-    // Gestione Commenti
+    // --- FIX 2: Gestione Commenti (Fallback anche qui) ---
     const comments = post.comments || [];
-    let commentsHtml = comments.map(c => `
+    let commentsHtml = comments.map(c => {
+        const commentUser = c.user || "Anonimo"; // Protezione per i commenti
+        return `
         <div class="bg-gray-50 p-3 rounded-xl mb-2 text-sm border border-gray-200">
-            <span class="font-bold text-blue-600">${c.user}:</span> 
+            <span class="font-bold text-blue-600">${commentUser}:</span> 
             <span class="text-gray-700">${c.text}</span>
         </div>
-    `).join('');
+    `}).join('');
 
     // Bottone Elimina (Solo Admin o Autore)
+    // Nota: usiamo authorName (o post.user) per il controllo
     let deleteBtn = '';
     if (currentUser === post.user || isAdmin) {
         deleteBtn = `<button onclick="window.confirmDeletePost('${postId}')" class="text-red-400 hover:text-red-600 transition p-2 rounded-full hover:bg-red-50">
@@ -94,11 +103,10 @@ function renderPost(postId, post, currentUser, isAdmin) {
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center">
                 <div class="w-10 h-10 bg-gradient-to-tr from-blue-500 to-blue-300 rounded-full flex items-center justify-center text-white font-bold shadow-sm">
-                    ${post.user ? post.user[0].toUpperCase() : '?'}
+                    ${authorInitial}
                 </div>
                 <div class="ml-3">
-                    <span class="font-semibold text-gray-800">${post.user}</span>
-                    <p class="text-xs text-gray-400">${dateDisplay}</p>
+                    <span class="font-semibold text-gray-800">${authorName}</span> <p class="text-xs text-gray-400">${dateDisplay}</p>
                 </div>
             </div>
             <div class="flex items-center">
@@ -303,3 +311,4 @@ window.publishPost = function() {
 
 // Inizializza l'ascoltatore solo se siamo nella pagina di visualizzazione
 document.addEventListener('DOMContentLoaded', listenToFirestorePosts);
+
