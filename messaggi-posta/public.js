@@ -244,15 +244,15 @@ window.publishPost = function() {
     // 3. Funzione di salvataggio DB
     const saveToFirestore = (mediaUrl, isVideo) => {
         const newPost = {
-            user: currentUser,
-            text: postText,
-            mediaUri: mediaUrl || null,
-            isVideo: isVideo,
-            timestamp: Date.now(),
-            category: "Generale",
-            likes: [],
-            comments: []
-        };
+        author: currentUser, // <--- Cambiato da user a author
+        text: postText,
+        mediaUri: mediaUrl || null,
+        isVideo: isVideo,
+        timestamp: Date.now(),
+        category: "Generale",
+        likes: [],
+        comments: []
+    };
 
         window.db.collection("posts").add(newPost)
             .then(() => {
@@ -309,5 +309,6 @@ window.publishPost = function() {
 
 // Inizializza l'ascoltatore solo se siamo nella pagina di visualizzazione
 document.addEventListener('DOMContentLoaded', listenToFirestorePosts);
+
 
 
