@@ -1,7 +1,5 @@
 // public.js
 
-var postsCollection;
-
 // Funzioni Globali
 window.toggleComments = function(postId) {
     const section = document.getElementById(`comment-section-${postId}`);
@@ -9,42 +7,37 @@ window.toggleComments = function(postId) {
     section.style.display = (section.style.display === "block") ? "none" : "block";
 };
 
-function initializeFirestore() {
-    if (window.db) {
-        postsCollection = window.db.collection("posts");
-        return true;
-    }
-    return false;
-}
-
+// Listener per caricare i post
 function listenToFirestorePosts() {
-    if (!initializeFirestore()) {
+    if (!window.db) {
+        // Riprova se il DB non è ancora pronto
         setTimeout(listenToFirestorePosts, 500);
         return;
     }
 
     const postsContainer = document.getElementById('posts-container');
-    if (!postsContainer) return; // Se siamo nella pagina 'posta.html' e non 'pubblici.html', usciamo.
+    if (!postsContainer) return;
 
     const currentUser = localStorage.getItem('currentUser') || "Guest";
     const isAdmin = currentUser === 'admin';
 
-    // Ordina per timestamp decrescente (dal più recente)
-    postsCollection.orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+    // Ordina per timestamp decrescente
+    window.db.collection("posts").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
         postsContainer.innerHTML = ''; 
+
+        if(snapshot.empty) {
+             postsContainer.innerHTML = '<p class="text-center text-gray-500 mt-10">Nessun post disponibile.</p>';
+             return;
+        }
 
         snapshot.forEach((doc) => {
             const postData = doc.data();
             const postId = doc.id;
             renderPost(postId, postData, currentUser, isAdmin);
         });
-        
-        // Rimuove lo spinner di caricamento se non ci sono post
-        if(snapshot.empty) {
-             postsContainer.innerHTML = '<p class="text-center text-gray-500 mt-10">Nessun post disponibile.</p>';
-        }
     }, (error) => {
         console.error("Errore Firestore:", error);
+        postsContainer.innerHTML = `<p class="text-center text-red-500 mt-10">Errore caricamento post: ${error.message}</p>`;
     });
 }
 
@@ -55,7 +48,6 @@ function renderPost(postId, post, currentUser, isAdmin) {
 
     let dateDisplay = "Data non disponibile";
     if (post.timestamp) {
-        // Gestione compatibilità: se è un numero (Java System.currentTimeMillis) o Timestamp Firestore
         const dateObj = typeof post.timestamp === 'number' ? new Date(post.timestamp) : post.timestamp.toDate();
         dateDisplay = dateObj.toLocaleString();
     }
@@ -75,8 +67,6 @@ function renderPost(postId, post, currentUser, isAdmin) {
     const likeIconFill = hasLiked ? 'currentColor' : 'none';
 
     const comments = post.comments || [];
-    // Nota: post.comments è una lista di oggetti. Assicuriamoci che campi 'user' e 'text' esistano.
-    // Se l'app Java usa 'author', qui potrebbe servire un check. Assumo 'user' come nel JS precedente.
     let commentsHtml = comments.map(c => `
         <div class="bg-gray-50 p-3 rounded-xl mb-2 text-sm border border-gray-200">
             <span class="font-bold text-blue-600">${c.user || c.author || 'Utente'}:</span> 
@@ -86,13 +76,11 @@ function renderPost(postId, post, currentUser, isAdmin) {
 
     let deleteBtn = '';
     if (currentUser === post.user || isAdmin) {
-        // Usa la modale custom se esiste, altrimenti confirm standard
         deleteBtn = `<button onclick="window.confirmDeletePost('${postId}')" class="text-red-400 hover:text-red-600 transition p-2 rounded-full hover:bg-red-50">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
         </button>`;
     }
 
-    // Aggiungi pulsante segnalazione per tutti tranne l'autore
     let reportBtn = '';
     if (currentUser !== post.user) {
          reportBtn = `<button onclick="openReportModal('${postId}')" class="text-gray-400 hover:text-yellow-500 transition ml-2" title="Segnala">
@@ -161,11 +149,10 @@ window.addComment = function(postId) {
 
     if (!commentText) return;
 
-    // Struttura commento compatibile con l'app
     const newComment = {
         user: currentUser,
         text: commentText,
-        timestamp: Date.now() // Uso un numero per compatibilità con long Java
+        timestamp: Date.now()
     };
 
     window.db.collection("posts").doc(postId).update({
@@ -174,7 +161,7 @@ window.addComment = function(postId) {
     .then(() => {
         inputField.value = '';
     })
-    .catch((error) => console.error("Errore:", error));
+    .catch((error) => console.error("Errore commento:", error));
 };
 
 // Funzione Like
@@ -188,12 +175,10 @@ window.toggleLike = function(postId) {
         let likes = doc.data().likes || [];
         
         if (likes.includes(currentUser)) {
-            // Rimuovi like
             postRef.update({
                 likes: firebase.firestore.FieldValue.arrayRemove(currentUser)
             });
         } else {
-            // Aggiungi like
             postRef.update({
                 likes: firebase.firestore.FieldValue.arrayUnion(currentUser)
             });
@@ -201,14 +186,13 @@ window.toggleLike = function(postId) {
     });
 };
 
-// Funzione Conferma Cancellazione (Wrapper per modale o confirm standard)
+// Modale e Cancellazione
 window.confirmDeletePost = function(postId) {
     const modal = document.getElementById('confirmation-modal');
     if (modal) {
-        // Se siamo in pubblici.html e c'è la modale custom
         modal.classList.remove('hidden');
-        // Rimuovi vecchi listener per evitare duplicazioni
         const confirmBtn = document.getElementById('confirm-delete');
+        // Clona per rimuovere listener precedenti
         const newConfirmBtn = confirmBtn.cloneNode(true);
         confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
         
@@ -221,7 +205,6 @@ window.confirmDeletePost = function(postId) {
             modal.classList.add('hidden');
         };
     } else {
-        // Fallback standard
         if (confirm("Eliminare definitivamente questo post?")) {
             window.deletePost(postId);
         }
@@ -234,16 +217,32 @@ window.deletePost = function(postId) {
         .catch(err => console.error("Errore eliminazione:", err));
 };
 
-// --- LOGICA DI PUBBLICAZIONE (UPLOAD STORAGE + FIRESTORE) ---
+// --- LOGICA DI PUBBLICAZIONE ---
 window.publishPost = function() {
+    // 1. Controlli Preliminari
     const currentUser = localStorage.getItem('currentUser');
     if (!currentUser) {
         alert("Devi aver effettuato l'accesso per pubblicare!");
         return;
     }
 
-    const postText = document.getElementById('post-text').value.trim();
+    if (!window.storage) {
+        alert("Errore di configurazione: Firebase Storage non inizializzato.");
+        return;
+    }
+
+    // 2. Acquisizione Dati
+    const textInput = document.getElementById('post-text');
     const fileInput = document.getElementById('file-upload');
+    const statusMsg = document.getElementById('status-message');
+    const submitBtn = document.querySelector('button[onclick="publishPost()"]');
+
+    if (!textInput) {
+        console.error("Input post-text non trovato nel DOM");
+        return;
+    }
+
+    const postText = textInput.value.trim();
     const file = fileInput ? fileInput.files[0] : null;
     
     if (!postText && !file) {
@@ -251,66 +250,65 @@ window.publishPost = function() {
         return;
     }
 
-    const btn = document.querySelector('button[type="submit"]');
-    const statusMsg = document.getElementById('status-message');
-    
-    // UI Loading state
-    if(btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<div class="loader"></div>'; 
+    // 3. UI Loading
+    if(submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<div class="loader"></div>'; 
     }
     if(statusMsg) {
         statusMsg.style.display = 'block';
-        statusMsg.className = 'mt-4 text-center text-sm font-medium text-blue-600';
+        statusMsg.className = 'mt-2 text-center text-sm font-medium text-blue-600';
         statusMsg.innerText = "Pubblicazione in corso...";
     }
 
-    // Funzione interna per salvare il documento
+    // 4. Funzione di Salvataggio su Firestore
     const saveToFirestore = (mediaUrl, isVideo) => {
         const newPost = {
-            user: currentUser, // String
-            text: postText,    // String
-            mediaUri: mediaUrl, // String (URL)
-            isVideo: isVideo,  // Boolean
-            category: "Generale", // String (Default per compatibilità Java)
-            timestamp: Date.now(), // Number (compatibile con long Java)
-            likes: [],         // List
-            comments: []       // List
+            user: currentUser,
+            text: postText,
+            mediaUri: mediaUrl || null,
+            isVideo: isVideo,
+            category: "Generale",
+            timestamp: Date.now(),
+            likes: [],
+            comments: []
         };
 
         window.db.collection("posts").add(newPost)
             .then(() => {
                 if(statusMsg) {
-                    statusMsg.className = 'mt-4 text-center text-sm font-medium text-green-600';
+                    statusMsg.className = 'mt-2 text-center text-sm font-medium text-green-600';
                     statusMsg.innerText = "Post pubblicato con successo!";
                 }
+                
                 // Reset form
-                document.getElementById('post-text').value = '';
+                textInput.value = '';
                 if(fileInput) fileInput.value = '';
-                if(document.getElementById('file-name')) document.getElementById('file-name').textContent = '';
+                const fileNameSpan = document.getElementById('file-name');
+                if(fileNameSpan) fileNameSpan.textContent = '';
                 
                 setTimeout(() => {
                     if(statusMsg) statusMsg.style.display = 'none';
-                    if(btn) {
-                        btn.disabled = false;
-                        btn.innerHTML = 'Pubblica post';
+                    if(submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Pubblica post';
                     }
                 }, 2000);
             })
             .catch((error) => {
                 console.error("Errore salvataggio DB:", error);
                 if(statusMsg) {
-                    statusMsg.className = 'mt-4 text-center text-sm font-medium text-red-600';
+                    statusMsg.className = 'mt-2 text-center text-sm font-medium text-red-600';
                     statusMsg.innerText = "Errore durante il salvataggio.";
                 }
-                if(btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = 'Pubblica post';
+                if(submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Pubblica post';
                 }
             });
     };
 
-    // Logica Upload
+    // 5. Upload File (se presente) o Salvataggio diretto
     if (file) {
         const isVideo = file.type.startsWith('video/');
         const storageRef = window.storage.ref();
@@ -325,19 +323,18 @@ window.publishPost = function() {
         }).catch((error) => {
             console.error("Errore upload file:", error);
             if(statusMsg) {
-                statusMsg.className = 'mt-4 text-center text-sm font-medium text-red-600';
-                statusMsg.innerText = "Errore durante il caricamento del file.";
+                statusMsg.className = 'mt-2 text-center text-sm font-medium text-red-600';
+                statusMsg.innerText = "Errore caricamento file: " + error.message;
             }
-            if(btn) {
-                btn.disabled = false;
-                btn.innerHTML = 'Pubblica post';
+            if(submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Pubblica post';
             }
         });
     } else {
-        // Nessun file, salva direttamente (mediaUrl vuoto o null)
         saveToFirestore("", false);
     }
 };
 
-// Inizializza l'ascoltatore al caricamento
+// Avvio
 document.addEventListener('DOMContentLoaded', listenToFirestorePosts);
