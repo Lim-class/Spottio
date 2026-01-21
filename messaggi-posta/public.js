@@ -43,7 +43,9 @@ function renderPost(postId, post, currentUser, isAdmin) {
 
     // --- LOGICA DI RECUPERO NOME (Cross-check) ---
     // Prova a prendere 'author', se non c'è prova 'user', altrimenti "Utente Sconosciuto"
-    const authorName = post.author || post.user || "Utente Sconosciuto";
+    const authorName = (post.author && post.author !== "") ? post.author : 
+                   (post.user && post.user !== "") ? post.user : 
+                   "Utente Anonimo";
     const authorInitial = authorName[0] ? authorName[0].toUpperCase() : '?';
 
     let dateDisplay = "Data non disponibile";
@@ -189,8 +191,9 @@ window.publishPost = function() {
     // Se mancano gli elementi fondamentali (siamo in pubblici.html), usciamo
     if (!textInput || !submitBtn) return; 
 
-    if (!currentUser) {
-        alert("Devi accedere per pubblicare!");
+    // Se non c'è un utente nel browser, fermiamo tutto
+    if (!currentUser || currentUser === "null") {
+        alert("Errore: Utente non identificato. Per favore effettua il login.");
         return;
     }
 
@@ -281,6 +284,7 @@ window.publishPost = function() {
 
 // Inizializza l'ascoltatore solo se siamo nella pagina di visualizzazione
 document.addEventListener('DOMContentLoaded', listenToFirestorePosts);
+
 
 
 
