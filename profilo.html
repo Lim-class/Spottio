@@ -1,0 +1,76 @@
+<!-- profilo.html -->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profilo</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            transition: background-color 0.3s ease; /* Aggiunge una transizione fluida per il cambio colore */
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+    <!-- Navigazione a sinistra -->
+    <div class="w-1/5 bg-white p-6 rounded-r-2xl shadow-xl flex flex-col justify-start items-start sticky top-0 h-screen transition-all duration-300">
+        <h2 id="menu-title" class="text-2xl font-bold text-gray-800 mb-6 w-full">Menu</h2>
+        <div id="nav-container" class="w-full"></div>
+        
+        <div class="mt-auto pt-6 flex flex-col items-start w-full space-y-4 relative">
+            <div class="relative w-full">
+                <button id="language-toggle" class="flex items-center w-full text-lg font-medium text-gray-600 hover:text-blue-600 hover:bg-gray-100 p-2 rounded-lg transition duration-200 focus:outline-none">
+                    <img id="selected-flag" src="https://flagcdn.com/it.svg" alt="Bandiera Italiana" class="h-4 w-6 mr-2">
+                    <span id="selected-lang-text">Italiano</span>
+                    <svg id="dropdown-icon" class="w-4 h-4 ml-auto transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="language-dropdown-container"></div>
+            </div>
+            <a href="index.html" id="logout-link" class="text-lg font-medium text-red-600 hover:underline transition duration-200" data-translate="logout">Esci</a>
+        </div>
+    </div>
+    <!-- Contenuto a destra specifico per la pagina "Profilo" -->
+    <div class="flex-grow p-8 flex items-center justify-center">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl text-center">
+            <h2 class="text-4xl font-bold text-gray-800 mb-4">Profilo</h2>
+            <p class="text-gray-600 mb-8">Gestisci le informazioni del tuo profilo.</p>
+
+            <!-- Form per l'aggiornamento del profilo -->
+            <form id="profile-form" class="space-y-6">
+                <div>
+                    <label for="profile-image" class="block text-left text-gray-700 text-lg font-medium mb-2">Immagine del profilo</label>
+                    <input type="file" id="profile-image" accept="image/*" class="w-full text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                </div>
+                <div>
+                    <label for="image-caption" class="block text-left text-gray-700 text-lg font-medium mb-2">Biografia</label>
+                    <textarea id="image-caption" rows="2" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-full hover:bg-blue-700 transition duration-300">
+                    Salva modifiche
+                </button>
+            </form>
+
+            <div id="status-message" class="mt-4 text-center text-sm font-medium" style="display:none;"></div>
+            
+            <!-- Anteprima del profilo salvato -->
+            <div id="profile-preview" class="mt-8">
+                <!-- Qui verranno visualizzati l'immagine e la didascalia salvate -->
+            </div>
+        </div>
+    </div>
+    <script src="profilo/profilo.js"></script>
+    <script src="ingresso_per_Gestione_Utenti/Ingresso_Gestione_Utenti.js"></script>
+    <script src="impostazioni/background-color.js"></script>
+    <script src="NAV/traduzioni/en.js"></script>
+    <script src="NAV/traduzioni/es.js"></script>
+    <script src="NAV/traduzioni/fr.js"></script>
+    <script src="NAV/language-dropdown.js"></script>
+    <script src="NAV/nav.js"></script>
+    <script src="logout.js"></script>
+</body>
+</html>

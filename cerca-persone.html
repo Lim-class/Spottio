@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cerca Persone</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            transition: background-color 0.3s ease;
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body class="flex min-h-screen">
+    <!-- Navigazione a sinistra -->
+    <div id="sidebar-container" class="w-1/5 bg-white p-6 rounded-r-2xl shadow-xl flex flex-col justify-start items-start sticky top-0 h-screen transition-all duration-300">
+        <h2 id="menu-title" class="text-2xl font-bold text-gray-800 mb-6 w-full">Menu</h2>
+        <div id="nav-container" class="w-full"></div>
+    </div>
+    <!-- Contenuto a destra specifico per la pagina "Cerca Persone" -->
+    <div class="flex-grow p-8">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl mx-auto">
+            <h2 class="text-4xl font-bold text-gray-800 mb-4">Cerca Persone</h2>
+            
+            <div class="relative mb-6">
+                <input type="text" id="search-input" placeholder="Cerca..." class="w-full pl-10 pr-4 py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 transition duration-200 text-gray-700">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-400">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                </div>
+            </div>
+
+            <div id="search-results-container" class="space-y-4">
+                <p class="text-gray-500 text-center text-lg">Caricamento utenti...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    </script>
+    <script src="cerca-persone/cerca-persone.js"></script>
+    <script src="ingresso_per_Gestione_Utenti/Ingresso_Gestione_Utenti.js"></script>
+    <script src="impostazioni/background-color.js"></script>
+    <script src="footer-nav.js"></script> 
+    <script src="NAV/traduzioni/en.js"></script>
+    <script src="NAV/traduzioni/es.js"></script>
+    <script src="NAV/traduzioni/fr.js"></script>
+    <script src="NAV/language-dropdown.js"></script>
+    <script src="NAV/nav.js"></script>
+    <script src="logout.js"></script>
+</body>
+</html>

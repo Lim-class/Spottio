@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Segnalazioni</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            transition: background-color 0.3s ease;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+    <!-- Navigazione a sinistra -->
+    <div id="sidebar-container" class="w-1/5 bg-white p-6 rounded-r-2xl shadow-xl flex flex-col justify-start items-start sticky top-0 h-screen transition-all duration-300">
+        <h2 id="menu-title" class="text-2xl font-bold text-gray-800 mb-6 w-full">Menu</h2>
+        <div id="nav-container" class="w-full"></div>
+    </div>
+    <!-- Contenuto a destra specifico per la pagina "Segnalazioni" -->
+    <div class="flex-grow p-8 flex justify-center">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-3xl">
+            <h2 class="text-4xl font-bold text-gray-800 mb-6">Gestione Segnalazioni</h2>
+            <div class="mb-4 flex justify-between items-center" id="reports-header">
+                <p id="total-reports" class="text-lg text-gray-600">Totale segnalazioni: <span id="reports-count">0</span></p>
+                <button id="delete-all-reports" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-200 hidden">
+                    Elimina tutte le segnalazioni
+                </button>
+            </div>
+            <div id="reports-container" class="space-y-6">
+                <!-- Le segnalazioni verranno caricate qui da reports-page.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Script JavaScript separato -->
+    <script src="impostazioni/background-color.js"></script>
+    <script src="impostazioni/scelta-colore.js"></script>
+    <script src="ingresso_per_Gestione_Utenti/Ingresso_Gestione_Utenti.js"></script>
+    <script src="footer-nav.js"></script>
+    <script src="NAV/traduzioni/en.js"></script>
+    <script src="NAV/traduzioni/es.js"></script>
+    <script src="NAV/traduzioni/fr.js"></script>
+    <script src="NAV/language-dropdown.js"></script>
+    <script src="NAV/nav.js"></script>
+    <script src="pubblici/reports-page.js"></script>
+    <script src="logout.js"></script>
+</body>
+</html>

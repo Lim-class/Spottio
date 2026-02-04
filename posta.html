@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Posta</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="posta/posta.css">
+</head>
+<body class="flex min-h-screen">
+    <!-- Navigazione a sinistra -->
+    <div id="sidebar-container" class="w-1/5 bg-white p-6 rounded-r-2xl shadow-xl flex flex-col justify-start items-start sticky top-0 h-screen transition-all duration-300">
+        <h2 id="menu-title" class="text-2xl font-bold text-gray-800 mb-6 w-full">Menu</h2>
+        <div id="nav-container" class="w-full"></div>
+    </div>
+    <!-- Contenuto a destra -->
+    <div class="flex-grow p-8 flex justify-center">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl">
+            <h2 class="text-4xl font-bold text-gray-800 mb-4">Posta un aggiornamento</h2>
+            <p class="text-gray-600 mb-6">Condividi i tuoi pensieri e le tue esperienze con la community.</p>
+            
+            <form id="public-post-form" class="space-y-6">
+                <!-- Campo testo -->
+                <div>
+                    <textarea id="post-text" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-gray-700 placeholder-gray-400" placeholder="Cosa ti passa per la testa?"></textarea>
+                </div>
+                
+                <!-- Upload File -->
+                <div>
+                    <label for="file-upload" class="flex flex-col items-center justify-center w-full h-40 custom-file-upload">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                            </svg>
+                            <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Clicca per caricare</span> o trascina e rilascia</p>
+                            <p class="text-xs text-gray-500">Immagini (PNG, JPG) o Video</p>
+                        </div>
+                        <input id="file-upload" type="file" class="hidden" accept="image/*,video/*" />
+                    </label>
+                </div>
+                <div id="file-name" class="text-sm text-gray-600 mt-2 font-medium"></div>
+                
+                <!-- Pulsante Pubblica -->
+                <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-full hover:bg-blue-700 transition duration-300 flex justify-center items-center">
+                    <span>Pubblica post</span>
+                </button>
+            </form>
+            
+            <div id="status-message" class="mt-4 text-center text-sm font-medium" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <script src="firebase-config.js"></script>
+
+    <!-- Script App -->
+    <script src="posta/posta.js"></script>
+    <script src="ingresso_per_Gestione_Utenti/Ingresso_Gestione_Utenti.js"></script>
+    <script src="impostazioni/background-color.js"></script>
+    <script src="footer-nav.js"></script>
+    <script src="NAV/traduzioni/en.js"></script>
+    <script src="NAV/traduzioni/es.js"></script>
+    <script src="NAV/traduzioni/fr.js"></script>
+    <script src="NAV/language-dropdown.js"></script>
+    <script src="NAV/nav.js"></script>
+    <script src="logout.js"></script>
+
+    <script>
+        // Gestione visualizzazione nome file selezionato
+        document.getElementById('file-upload').addEventListener('change', function(e) {
+            const fileName = e.target.files[0] ? e.target.files[0].name : '';
+            document.getElementById('file-name').textContent = fileName ? 'File selezionato: ' + fileName : '';
+        });
+
+        // Gestione invio form
+        document.getElementById('public-post-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            window.publishPost();
+        });
+    </script>
+</body>
+</html>

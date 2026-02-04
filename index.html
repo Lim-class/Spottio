@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Benvenuto su Spottio!</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e0f2fe;
+        }
+    </style>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="flex items-center justify-center min-h-screen flex-col">
+
+    <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm mx-4">
+        <h2 id="welcome-title" class="text-2xl font-bold text-center text-gray-800 mb-8">Benvenuto su Spottio!</h2>
+        
+        <div id="forms-container">
+            <div id="login-form">
+                <form id="loginForm">
+                    <div class="mb-6">
+                        <input type="text" id="login-username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Inserisci il tuo nome utente" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="password" id="login-password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Inserisci la tua password" required>
+                    </div>
+                    
+                    <div class="mb-6 text-right">
+                        <button type="button" id="tvForgotPassword" class="text-sm text-blue-600 hover:underline hover:text-blue-800 transition-colors">Password dimenticata?</button>
+                    </div>
+
+                    <div class="flex justify-between items-center space-x-4 mb-6">
+                        <button type="submit" id="login-button" class="w-1/2 bg-[#00bcd4] text-white py-3 rounded-lg font-semibold hover:bg-[#00a8bd] transition duration-300 ease-in-out">Accedi</button>
+                        <button type="button" id="show-signup" class="w-1/2 bg-gray-500 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition duration-300 ease-in-out">Registrati</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="signup-form" class="hidden">
+                <form id="signupForm">
+                    <div class="mb-6">
+                        <input type="text" id="signup-username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Scegli un nome utente" required>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <input type="email" id="signup-email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Inserisci la tua email" required>
+                    </div>
+
+                    <div class="mb-6">
+                        <input type="password" id="signup-password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Crea una password" required>
+                    </div>
+
+                    <div class="flex justify-between items-center space-x-4 mb-6">
+                        <button type="button" id="show-login" class="w-1/2 bg-gray-500 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition duration-300 ease-in-out">Accedi</button>
+                        <button type="submit" id="signup-button" class="w-1/2 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-300 ease-in-out">Registrati</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="relative flex justify-center mt-6">
+            <button id="language-dropdown-button" class="flex items-center bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition duration-300 ease-in-out">
+                <span id="selected-lang-text">Italiano</span>
+                <img id="selected-lang-flag" src="https://flagcdn.com/it.svg" alt="Bandiera Italiana" class="h-4 w-6 ml-2">
+            </button>
+            <div id="language-dropdown-menu" class="absolute top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg hidden z-10">
+                <button class="lang-option w-full flex items-center p-3 hover:bg-gray-100 rounded-t-lg" data-lang="it" data-text="Italiano">
+                    <img src="https://flagcdn.com/it.svg" alt="Bandiera Italiana" class="h-4 w-6 mr-2"> Italiano
+                </button>
+                <button class="lang-option w-full flex items-center p-3 hover:bg-gray-100" data-lang="en" data-text="English">
+                    <img src="https://flagcdn.com/gb.svg" alt="Bandiera Inglese" class="h-4 w-6 mr-2"> English
+                </button>
+                <button class="lang-option w-full flex items-center p-3 hover:bg-gray-100" data-lang="es" data-text="Español">
+                    <img src="https://flagcdn.com/es.svg" alt="Bandiera Spagnola" class="h-4 w-6 mr-2"> Español
+                </button>
+                <button class="lang-option w-full flex items-center p-3 hover:bg-gray-100" data-lang="fr" data-text="Français">
+                    <img src="https://flagcdn.com/fr.svg" alt="Bandiera Francese" class="h-4 w-6 mr-2"> Français
+                </button>
+                <button class="lang-option w-full flex items-center p-3 hover:bg-gray-100" data-lang="de" data-text="Deutsch">
+                    <img src="https://flagcdn.com/de.svg" alt="Bandiera Tedesca" class="h-4 w-6 mr-2"> Deutsch
+                </button>
+                <button class="lang-option w-full flex items-center p-3 hover:bg-gray-100" data-lang="ar" data-text="العربية">
+                    <img src="https://flagcdn.com/sa.svg" alt="Bandiera Saudita" class="h-4 w-6 mr-2"> العربية
+                </button>
+                <button class="lang-option w-full flex items-center p-3 hover:bg-gray-100" data-lang="ru" data-text="Русский">
+                    <img src="https://flagcdn.com/ru.svg" alt="Bandiera Russa" class="h-4 w-6 mr-2"> Русский
+                </button>
+                <button class="lang-option w-full flex items-center p-3 hover:bg-gray-100" data-lang="ja" data-text="日本語">
+                    <img src="https://flagcdn.com/jp.svg" alt="Bandiera Giapponese" class="h-4 w-6 mr-2"> 日本語
+                </button>
+                <button class="lang-option w-full flex items-center p-3 hover:bg-gray-100 rounded-b-lg" data-lang="nl" data-text="Nederlands">
+                    <img src="https://flagcdn.com/nl.svg" alt="Bandiera Olandese" class="h-4 w-6 mr-2"> Nederlands
+                </button>
+            </div>
+        </div>
+        
+        <div id="message-container" class="mt-4 text-center text-sm font-medium"></div>
+    </div>
+
+    <footer class="mt-8 mb-4">
+        <div class="flex flex-wrap justify-center space-x-4">
+            <a href="login/footer/Storia.html" class="bg-white text-gray-800 py-2 px-4 rounded-full shadow-md hover:bg-gray-200 transition duration-300 ease-in-out mb-2 sm:mb-0">Storia</a>
+            <a href="login/footer/Policy.html" class="bg-white text-gray-800 py-2 px-4 rounded-full shadow-md hover:bg-gray-200 transition duration-300 ease-in-out mb-2 sm:mb-0">Policy</a>
+            <a href="login/footer/Privacy.html" class="bg-white text-gray-800 py-2 px-4 rounded-full shadow-md hover:bg-gray-200 transition duration-300 ease-in-out mb-2 sm:mb-0">Privacy</a>
+        </div>
+    </footer>
+
+    <script src="login/traduzioni/Inglese.js"></script>
+    <script src="login/traduzioni/Spagnolo.js"></script>
+    <script src="login/traduzioni/Francese.js"></script>
+    <script src="login/Lingue_login.js"></script>
+    
+    <script src="login/login.js"></script>
+</body>
+</html>
