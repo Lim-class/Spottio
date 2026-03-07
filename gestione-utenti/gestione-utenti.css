@@ -1,0 +1,26 @@
+ @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            transition: background-color 0.3s ease;
+        }
+        .user-row {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .user-row:last-child {
+            border-bottom: none;
+        }
+        /* Badge per utenti sospesi */
+        .badge-suspended {
+            background-color: #fee2e2;
+            color: #991b1b;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }

@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f3f4f6;
+    transition: background-color 0.3s ease;
+}
+
+.custom-file-upload {
+    border: 2px dashed #d1d5db;
+    border-radius: 0.5rem;
+    background-color: #f9fafb;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.custom-file-upload:hover {
+    background-color: #f3f4f6;
+    border-color: #93c5fd;
+}
+
+.loader {
+    border: 3px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 3px solid #3498db;
+    width: 20px;
+    height: 20px;
+    -webkit-animation: spin 1s linear infinite; /* Safari */
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
