@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profilo - Spottio</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="profilo/profilo.css">
+</head>
+<body class="flex min-h-screen bg-gray-50">
+
+    <div id="sidebar-container" class="w-1/5 bg-white p-6 rounded-r-2xl shadow-xl flex flex-col justify-start items-start sticky top-0 h-screen transition-all duration-300">
+        <h2 id="menu-title" class="text-2xl font-bold text-gray-800 mb-6 w-full">Menu</h2>
+        <div id="nav-container" class="w-full"></div>
+    </div>
+
+    <div class="flex-grow p-4 md:p-8 flex items-start justify-center pt-10">
+        <div class="bg-white p-6 rounded-3xl shadow-sm w-full max-w-md">
+        
+            <div class="flex items-center gap-4 mb-8">
+    <div class="relative group">
+        <img id="profile-img-display" src="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" 
+        class="w-20 h-20 rounded-2xl object-cover shadow-md border border-gray-100">
+        <input type="file" id="profile-image" accept="image/*" class="hidden">
+    </div>
+    
+    <div class="text-left flex-grow">
+        <div class="flex items-center justify-between">
+            <h2 id="display-username" class="text-2xl font-bold text-gray-800">admin</h2>
+            
+            <a href="impostazioni.html" class="p-2 text-gray-400 hover:text-gray-600 transition-colors" title="Impostazioni">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.525.293.93.55 1.065 1.066z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </a>
+        </div>
+        <p id="display-bio" class="text-gray-500 text-sm">Ad maiora semper</p>
+    </div>
+</div>
+
+            <div class="flex justify-around mb-8 py-2">
+    <div id="btn-show-followers" class="text-center cursor-pointer hover:bg-gray-100 p-2 rounded-xl transition duration-200">
+        <span id="follower-count" class="block text-xl font-bold text-gray-800">0</span>
+        <span class="text-xs text-gray-500 font-semibold uppercase">Follower</span>
+    </div>
+    <div id="btn-show-following" class="text-center cursor-pointer hover:bg-gray-100 p-2 rounded-xl transition duration-200">
+        <span id="following-count" class="block text-xl font-bold text-gray-800">0</span>
+        <span class="text-xs text-gray-500 font-semibold uppercase">Seguiti</span>
+    </div>
+</div>
+
+            <div class="flex items-center gap-3 mb-4">
+                <button id="edit-bio-btn" class="flex-1 bg-[#6a5cb3] text-white font-bold py-3 rounded-full hover:bg-opacity-90 transition shadow-md">
+                    Modifica Bio
+                </button>
+            
+            <div class="relative">
+                <button id="language-toggle" class="flex items-center gap-2 bg-gray-50 px-4 py-3 rounded-xl border border-gray-100">
+                    <img id="selected-flag" src="https://flagcdn.com/it.svg" class="h-4 w-6 rounded-sm">
+                    <span id="selected-lang-text" class="font-bold text-[#0a2342]">Italiano</span>
+                    <svg id="dropdown-icon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div id="language-dropdown-container"></div>
+            </div>
+        </div>
+
+        <div id="admin-actions-container" class="hidden mb-4">
+            <a href="segnalazioni.html" class="w-full bg-orange-500 text-white font-bold py-3 rounded-full hover:bg-orange-600 transition shadow-md flex justify-center items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg> Gestione Segnalazioni (Admin) </a>
+        </div>
+        <button id="logout-link" class="w-full bg-[#ff5252] text-white font-bold py-3 rounded-full ...">
+        Logout
+        </button>
+        <form id="profile-form" class="hidden space-y-4 pt-4 border-t border-gray-100">
+            <textarea id="image-caption" rows="2" class="w-full p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-[#6a5cb3]"></textarea>
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg">Salva</button>
+        </form>
+        <div id="status-message" class="mt-2 text-center text-sm font-medium"></div>
+    </div>
+</div>
+</div>
+
+<div id="users-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-3xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col max-h-[80vh] transform transition-all">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 id="modal-title" class="text-lg font-bold text-gray-800">Utenti</h3>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-red-500 transition-colors p-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="modal-user-list" class="p-4 overflow-y-auto flex-grow flex flex-col gap-2">
+                </div>
+        </div>
+    </div>
+    <script src="load-firebase.js"></script>
+    <script src="profilo/profilo.js"></script>
+    <script src="load-nav-scripts.js"></script>
+</body>
+</html>

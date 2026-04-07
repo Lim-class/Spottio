@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messaggi</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="chat/chat.css">
+</head>
+<body class="flex min-h-screen relative">
+    <div id="sidebar-container" class="w-1/5 bg-white p-6 rounded-r-2xl shadow-xl flex flex-col justify-start items-start sticky top-0 h-screen transition-all duration-300">
+        <h2 id="menu-title" class="text-2xl font-bold text-gray-800 mb-6 w-full">Menu</h2>
+        <div id="nav-container" class="w-full"></div>
+    </div>
+
+    <div class="flex-grow p-4 lg:p-8 flex h-screen overflow-hidden">
+        
+    <div id="chat-list-container" class="w-full lg:w-1/3 bg-white p-6 rounded-2xl lg:rounded-l-2xl lg:rounded-r-none shadow-xl flex flex-col h-full overflow-hidden">
+        <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-gray-800">Chat</h3>
+                <button id="btn-open-group-modal" class="bg-green-100 text-green-700 hover:bg-green-200 p-2 rounded-full transition-colors" title="Nuovo Gruppo">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                </button>
+            </div>
+            
+            <div class="mb-4 relative">
+                <input type="text" id="user-search" placeholder="Cerca persone o gruppi..." class="w-full p-2 pl-10 rounded-lg bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <div id="search-results" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-2 shadow-lg hidden"></div>
+            </div>
+            <div id="chats-list" class="flex-grow overflow-y-auto space-y-4 custom-scrollbar">
+            </div>
+        </div>
+
+        <div id="chat-content-container" class="w-full lg:w-2/3 bg-white p-6 rounded-2xl lg:rounded-r-2xl lg:rounded-l-none shadow-xl flex flex-col h-[calc(100vh-4rem)] relative">
+            
+            <div id="chat-header" class="flex items-center justify-between border-b pb-4 mb-4 hidden shrink-0">
+                <div class="flex items-center">
+                    <button id="btn-back-to-list" class="mr-3 p-2 lg:hidden bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <div id="recipient-avatar" class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xl mr-4"></div>
+                    <div class="flex flex-col">
+                        <h3 id="chat-recipient-name" class="text-2xl font-bold text-gray-800"></h3>
+                        <span id="chat-subtitle" class="text-xs text-gray-500 hidden"></span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <select id="bg-selector" class="text-sm p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-w-0 truncate max-w-[130px] sm:max-w-none">
+    <option value="default">Sfondo Default</option>
+    <option value="#e5ddd5">Beige (WhatsApp)</option>
+    <option value="#d1e7dd">Verde Chiaro</option>
+    <option value="#f8d7da">Rosa Tenue</option>
+    <option value="#1f2937">Scuro (Dark Mode)</option>
+    <option value="custom">Carica immagine...</option>
+</select>
+                    <input type="file" id="bg-upload" class="hidden" accept="image/*">
+                </div>
+            </div>
+
+            <div id="messages-container" class="flex-grow overflow-y-auto space-y-4 p-4 border rounded-lg bg-gray-50 mb-4 custom-scrollbar transition-all duration-300">
+                <p id="no-chat-message" class="text-gray-500 text-center text-lg my-auto h-full flex items-center justify-center">Seleziona una chat o un gruppo per iniziare a conversare.</p>
+            </div>
+
+            <form id="message-form" class="flex w-full hidden shrink-0 gap-2 sm:gap-4">
+    <input type="text" id="message-input" autocomplete="off" placeholder="Scrivi un messaggio..." class="flex-grow min-w-0 p-3 rounded-lg bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <button type="submit" class="shrink-0 px-4 sm:px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200">Invia</button>
+</form>
+        </div>
+    </div>
+
+    <div id="group-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-96 flex flex-col">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Crea un nuovo Gruppo</h3>
+            
+            <input type="text" id="group-name-input" placeholder="Nome del gruppo..." class="w-full p-2 mb-4 rounded-lg bg-gray-50 border border-gray-300 focus:ring-2 focus:ring-green-500">
+            
+            <div class="mb-4 relative">
+                <input type="text" id="group-user-search" placeholder="Cerca membri da aggiungere..." class="w-full p-2 rounded-lg bg-gray-50 border border-gray-300">
+                <div id="group-search-results" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 shadow-lg hidden max-h-40 overflow-y-auto"></div>
+            </div>
+
+            <div class="mb-4 flex-grow">
+                <p class="text-sm font-semibold text-gray-600 mb-2">Membri selezionati:</p>
+                <div id="selected-members-list" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-4">
+                <button id="btn-close-group-modal" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Annulla</button>
+                <button id="btn-confirm-group" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold">Crea</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="load-firebase.js"></script>
+    <script src="posta/posta.js"></script>
+    <script src="chat/messages-ui.js"></script>
+    <script src="chat/messages-groups.js"></script>
+    <script src="chat/messages-main.js"></script>
+    <script src="chat/messages-chat.js"></script>
+    <script src="load-nav-scripts.js"></script>
+</body>
+</html>

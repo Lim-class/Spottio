@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f3f4f6;
+    transition: background-color 0.3s ease; /* Aggiunge una transizione fluida per il cambio colore */
+}
+
+/* Previene lo scroll orizzontale all'interno dell'area messaggi e garantisce il corretto layout flex */
+#messages-container {
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Aggiungi questo alla fine di chat.css */
+
+/* ==========================================
+   MOBILE LAYOUT LOGIC (< 1024px)
+   ========================================== */
+@media (max-width: 1023px) {
+    .hidden-mobile {
+        display: none !important;
+    }
+}
