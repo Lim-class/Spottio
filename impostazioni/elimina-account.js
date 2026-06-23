@@ -38,17 +38,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentUser = localStorage.getItem('currentUser');
             if (currentUser) {
                 // Leggi tutti gli utenti dal localStorage
-                const users = JSON.parse(localStorage.getItem('users'));
-                if (users) {
-                    // Filtra l'array per rimuovere l'utente corrente
-                    const updatedUsers = users.filter(user => user.username !== currentUser);
-                    // Salva l'array aggiornato nel localStorage
-                    localStorage.setItem('users', JSON.stringify(updatedUsers));
-                    // Rimuovi l'utente corrente dal localStorage
-                    localStorage.removeItem('currentUser');
-                    // Reindirizza alla pagina di login
-                    window.location.href = 'login.html';
-                }
+                const user = firebase.auth().currentUser;
+if (user) {
+    // 1. Elimina il documento da Firestore
+    window.db.collection("users").doc(user.uid).delete().then(() => {
+        // 2. Elimina l'utente da Firebase Auth
+        return user.delete();
+    }).then(() => {
+        // 3. Pulisci il LocalStorage locale e reindirizza
+        localStorage.clear();
+        window.location.href = '../login/login.html';
+    }).catch((error) => {
+        console.error("Errore durante l'eliminazione:", error);
+        alert("Per eliminare l'account devi aver effettuato l'accesso di recente. Prova a disconnetterti e accedere di nuovo.");
+    });
+}
             }
         });
     }
