@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="impostazioniTitle">Impostazioni</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="body.css">
+</head>
+<body class="flex min-h-screen">
+    <!-- Navigazione a sinistra -->
+    <div id="sidebar-container" class="w-1/5 bg-white p-6 rounded-r-2xl shadow-xl flex flex-col justify-start items-start sticky top-0 h-screen overflow-y-auto custom-scrollbar transition-all duration-300">
+    <h2 id="menu-title" class="text-2xl font-bold text-gray-800 mb-6 w-full"></h2>
+    <div id="nav-container" class="w-full"></div>
+</div>
+<!-- Contenuto a destra specifico -->
+
+    <div class="flex-grow p-8 flex items-center justify-center">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl">
+            <h2 class="text-4xl font-bold text-gray-800 mb-4 text-center" data-translate="impostazioniTitle">Impostazioni</h2>
+            <p class="text-gray-600 mb-6 text-center" data-translate="impostazioniDesc">Configura le preferenze del tuo account.</p>
+
+            <div class="relative mb-8">
+                <input type="text" id="searchSettings" onkeyup="filterSettings()" placeholder="Cerca impostazioni..." data-translate="searchSettingsPlaceholder"
+                       class="w-full p-3 pl-10 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none transition duration-200">
+                <div class="absolute left-3 top-3.5 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+            </div>
+
+            <div id="settings-container">
+                
+                <div class="accordion-item border-b border-gray-200 py-4">
+                    <button onclick="toggleSection('section-password')" class="w-full flex justify-between items-center py-2 focus:outline-none">
+                        <span class="text-2xl font-semibold text-gray-700" data-translate="changePasswordTitle">Cambio Password</span>
+                        <span id="icon-section-password" class="transform transition-transform duration-200">▼</span>
+                    </button>
+                    <div id="section-password" class="hidden mt-4 pb-4">
+                        <input type="password" id="old-pass" placeholder="Password attuale" data-translate="oldPassPlaceholder" class="w-full p-3 mb-3 rounded-xl border border-gray-300">
+                        <input type="password" id="new-pass" placeholder="Nuova password" data-translate="newPassPlaceholder" class="w-full p-3 mb-3 rounded-xl border border-gray-300">
+                        <button id="update-pass-btn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700" data-translate="updatePassBtn">Aggiorna Password</button>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-b border-gray-200 py-4">
+    <button onclick="toggleSection('section-email')" class="w-full flex justify-between items-center py-2 focus:outline-none">
+        <span class="text-2xl font-semibold text-gray-700" data-translate="changeEmailTitle">Cambio Email</span>
+        <span id="icon-section-email" class="transform transition-transform duration-200">▼</span>
+    </button>
+    <div id="section-email" class="hidden mt-4 pb-4">
+        <input type="password" id="email-current-pass" placeholder="Password attuale" data-translate="oldPassPlaceholder" class="w-full p-3 mb-3 rounded-xl border border-gray-300">
+        <input type="email" id="new-email" placeholder="Nuova e-mail" class="w-full p-3 mb-3 rounded-xl border border-gray-300">
+        <button id="update-email-btn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700" data-translate="updateEmailBtn">Aggiorna Email</button>
+    </div>
+</div>
+
+                <div class="accordion-item border-b border-gray-200 py-4">
+                    <button onclick="toggleSection('section-color')" class="w-full flex justify-between items-center py-2 focus:outline-none">
+                        <span class="text-2xl font-semibold text-gray-700" data-translate="backgroundTitle">Colore di Sfondo</span>
+                        <span id="icon-section-color" class="transform transition-transform duration-200">▼</span>
+                    </button>
+                    <div id="section-color" class="hidden mt-4 overflow-hidden">
+                        <div class="relative mb-4 max-w-sm mx-auto">
+                            <input type="text" id="searchColors" onkeyup="filterColors()" placeholder="Cerca per nome, HEX o RGB" data-translate="searchColorsPlaceholder" class="w-full p-2 pl-8 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-green-400 focus:outline-none">
+                            <div class="absolute left-2 top-2.5 text-gray-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div id="color-picker-container" class="flex flex-wrap justify-center gap-4 max-w-sm mx-auto pb-4"></div>
+                        <div class="mt-6 pt-4 border-t border-gray-100 flex flex-col items-center">
+                            <label class="block text-sm font-medium text-gray-600 mb-2" data-translate="createColorLabel">Crea il tuo colore:</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" id="customColorInput" class="w-12 h-12 cursor-pointer rounded-lg border-2 border-gray-300 bg-transparent transition-transform hover:scale-110">
+                                <button id="saveCustomColorBtn" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors shadow-sm" data-translate="saveBtn">Salva</button>
+                            </div>
+                            <p id="detectedColorName" class="text-xs text-gray-400 mt-2 italic" data-translate="chooseColorPlaceholder">Scegli un colore per vedere il nome...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-b border-gray-200 py-4">
+                    <button onclick="toggleSection('section-download')" class="w-full flex justify-between items-center py-2 focus:outline-none">
+                        <span class="text-2xl font-semibold text-gray-700" data-translate="downloadAppTitle">Scarica App (APK)</span>
+                        <span id="icon-section-download" class="transform transition-transform duration-200">▼</span>
+                    </button>
+                    <div id="section-download" class="hidden mt-4 text-center pb-4">
+                        <p class="text-gray-600 mb-6" data-translate="downloadAppDesc">Scarica l'ultima versione dell'applicazione per il tuo dispositivo Android.</p>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-b border-gray-200 py-4">
+                    <button onclick="toggleSection('section-privacy')" class="w-full flex justify-between items-center py-2 focus:outline-none">
+                        <span class="text-2xl font-semibold text-gray-700" data-translate="privacyProfileTitle">Privacy Profilo</span>
+                        <span id="icon-section-privacy" class="transform transition-transform duration-200">▼</span>
+                    </button>
+                    <div id="section-privacy" class="hidden mt-4 pb-4">
+                        <p class="text-gray-600 mb-6" data-translate="privacyProfileDesc">Scegli chi può vedere i tuoi post. Quando il tuo account è privato, solo le persone che approvi potranno seguirti e vedere i tuoi contenuti.</p>
+                        <div class="flex items-center justify-between bg-gray-50 p-4 rounded-xl border border-gray-200">
+                            <div>
+                                <h4 class="font-bold text-gray-800 text-lg" data-translate="privateAccountTitle">Account Privato</h4>
+                                <p class="text-sm text-gray-500" data-translate="privateAccountDesc">I follower attuali non saranno influenzati.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-privacy" class="sr-only peer">
+                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <p id="privacy-status-msg" class="text-sm font-medium mt-3 hidden"></p>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-b border-gray-200 py-4">
+                    <button onclick="toggleSection('section-export')" class="w-full flex justify-between items-center py-2 focus:outline-none">
+                        <span class="text-2xl font-semibold text-gray-700" data-translate="exportDataTitle">Esporta Dati</span>
+                        <span id="icon-section-export" class="transform transition-transform duration-200">▼</span>
+                    </button>
+                    <div id="section-export" class="hidden mt-4 text-center pb-4">
+                    <p class="text-gray-600 mb-6" data-translate="exportDataDesc">Scarica una copia dei dati che hai condiviso su Spottio (Post, Profilo). Scegli il formato che preferisci.</p>
+                    
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mx-auto">
+                        <button id="btn-export-json" class="w-full sm:w-auto bg-gray-800 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-900 shadow-md transition duration-200 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <span data-translate="exportJsonBtn">Esporta JSON</span>
+                        </button>
+                        
+                        <button id="btn-export-html" class="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 shadow-md transition duration-200 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                            </svg>
+                            <span data-translate="exportHtmlBtn">Esporta HTML</span>
+                        </button>
+                    </div>
+                </div>
+                </div>
+
+                <div class="accordion-item border-b border-gray-200 py-4">
+                    <button onclick="toggleSection('section-storia')" class="w-full flex justify-between items-center py-2 focus:outline-none">
+                        <span class="text-2xl font-semibold text-gray-700" data-translate="historyTitle">Storia</span>
+                        <span id="icon-section-storia" class="transform transition-transform duration-200">▼</span>
+                    </button>
+                    <div id="section-storia" class="hidden mt-4 pb-4">
+                        <div id="storia-content" class="bg-gray-50 p-5 rounded-xl border border-gray-200 text-sm text-gray-700 leading-relaxed space-y-4"></div>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-b border-gray-200 py-4">
+                    <button onclick="toggleSection('section-privacy-doc')" class="w-full flex justify-between items-center py-2 focus:outline-none">
+                        <span class="text-2xl font-semibold text-gray-700" data-translate="privacyDocTitle">Informativa Privacy</span>
+                        <span id="icon-section-privacy-doc" class="transform transition-transform duration-200">▼</span>
+                    </button>
+                    <div id="section-privacy-doc" class="hidden mt-4 pb-4">
+                        <div id="privacy-content" class="bg-gray-50 p-5 rounded-xl border border-gray-200 text-sm text-gray-700 leading-relaxed space-y-4"></div>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-b border-gray-200 py-4">
+                    <button onclick="toggleSection('section-policy')" class="w-full flex justify-between items-center py-2 focus:outline-none">
+                        <span class="text-2xl font-semibold text-gray-700" data-translate="communityPolicyTitle">Policy della Community</span>
+                        <span id="icon-section-policy" class="transform transition-transform duration-200">▼</span>
+                    </button>
+                    <div id="section-policy" class="hidden mt-4 pb-4">
+                        <div id="policy-content" class="bg-gray-50 p-5 rounded-xl border border-gray-200 text-sm text-gray-700 leading-relaxed space-y-4"></div>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-b border-gray-200 py-4">
+                    <button onclick="toggleSection('section-delete')" class="w-full flex justify-between items-center py-2 focus:outline-none">
+                        <span class="text-2xl font-semibold text-gray-700" data-translate="deleteAccountTitle">Elimina Account</span>
+                        <span id="icon-section-delete" class="transform transition-transform duration-200">▼</span>
+                    </button>
+                    <div id="section-delete" class="hidden mt-4 text-center pb-4">
+                        <p class="text-gray-600 mb-6" data-translate="deleteAccountDesc">Questa azione è irreversibile.</p>
+                        <button id="delete-account-btn" class="bg-red-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-600 shadow-md" data-translate="deleteAccountBtn">
+                            Elimina il mio account
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="gestione-impostazioni.js"></script>
+    <script src="scelta-colore.js"></script>
+    <script src="elimina-account.js"></script>
+    <script src="export-privacy.js"></script>
+    <script src="gestione-password.js"></script>
+    <script src="gestione-email.js"></script>
+    
+    <script src="../testiDoppi/storia.js"></script>
+    <script src="../testiDoppi/privacy.js"></script>
+    <script src="../testiDoppi/policy.js"></script>
+
+    <script src="../load-firebase.js"></script>
+    <script src="../load-nav-scripts.js"></script>
+</body>
+</html>

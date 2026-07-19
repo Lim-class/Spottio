@@ -1,0 +1,59 @@
+# ⚙️ Modulo Impostazioni - Spottio
+
+Questo modulo gestisce la pagina delle impostazioni dell'utente per l'applicazione Spottio. Fornisce un'interfaccia intuitiva e reattiva per il controllo della sicurezza, della privacy, dell'aspetto visivo e della gestione dei dati personali.
+
+## 📋 Indice
+1. [Funzionalità Principali](#funzionalità-principali)
+2. [Struttura dei File](#struttura-dei-file)
+3. [Tecnologie e API Utilizzate](#tecnologie-e-api-utilizzate)
+4. [Dettaglio Logiche Core](#dettaglio-logiche-core)
+
+---
+
+## 🚀 Funzionalità Principali
+
+* **Gestione Sicurezza:** Permette all'utente di aggiornare la propria password tramite re-autenticazione con Firebase.
+* **Personalizzazione Interfaccia:** Gli utenti possono scegliere o creare un colore di sfondo personalizzato.
+* **Ricerca Colori:** Integra una barra di ricerca per trovare i colori di sfondo tramite Nome, codice HEX o valori RGB.
+* **Esportazione Dati:** Gli utenti possono esportare i propri post, le preferenze dell'algoritmo e le statistiche in formato JSON o HTML.
+* **Gestione Privacy:** Possibilità di impostare il profilo come "Privato" (solo gli utenti approvati possono vedere i contenuti) o "Pubblico".
+* **Eliminazione Account:** Procedura irreversibile per eliminare l'account, con blocco di sicurezza automatico per l'utente "admin".
+* **Ricerca Impostazioni:** Barra di ricerca globale per filtrare e trovare immediatamente la sezione desiderata all'interno della pagina.
+
+---
+
+## 📂 Struttura dei File
+
+L'architettura del modulo è divisa per responsabilità in file separati, garantendo un codice pulito e modulare:
+
+* **`impostazioni.html`**: Il layout principale della pagina, basato su un design a fisarmonica (Accordion) e stilizzato tramite Tailwind CSS.
+* **`body.css`**: Imposta il font globale (Inter), il colore di sfondo predefinito (`#f3f4f6`) e gestisce le transizioni fluide del background.
+* **`gestione-impostazioni.js`**: Gestisce l'interfaccia utente, incluse l'apertura esclusiva delle sezioni (Accordion) e la funzione di ricerca tra le impostazioni.
+* **`background-color.js`**: Applica immediatamente il colore di sfondo dal `localStorage` per evitare sfarfallii dello schermo durante il caricamento, per poi sincronizzarlo in background con Firestore.
+* **`scelta-colore.js`**: Gestisce il salvataggio dei colori personalizzati interfacciandosi con un'API esterna per rilevarne il nome in tempo reale.
+* **`export-privacy.js`**: Coordina il toggle per la privacy dell'account e raccoglie i dati da Firebase per generare i file di esportazione (JSON e HTML) scaricabili dall'utente.
+* **`gestione-password.js`**: Gestisce l'aggiornamento della password richiedendo prima la ri-autenticazione tramite le credenziali attuali.
+* **`elimina-account.js`**: Gestisce il flusso per l'eliminazione dell'account, rimuovendo l'utente dal `localStorage` e reindirizzandolo alla pagina di login.
+
+---
+
+## 🛠 Tecnologie e API Utilizzate
+
+* **Frontend:** HTML5, Tailwind CSS (per il layout), CSS standard (per transizioni e font).
+* **Database e Autenticazione:** Firebase Firestore e Firebase Auth.
+* **API Esterna (The Color API):** Utilizzata gratuitamente per ottenere informazioni dettagliate e un "nome leggibile" partendo dal codice HEX di un colore personalizzato inserito dall'utente. Questo nome viene poi usato come ID nel database.
+
+---
+
+## 🧠 Dettaglio Logiche Core
+
+### Esportazione Dati HTML
+Quando l'utente richiede l'esportazione in HTML, il sistema genera un file strutturato che include:
+* **Metadati:** Data della richiesta e nome utente.
+* **Profilo Algoritmo:** Mostra i punteggi delle preferenze calcolati dall'algoritmo (che decrescono dopo 30 giorni di inattività) e l'ultima data di interazione formattata in modo leggibile.
+* **I Tuoi Post:** Elenco di tutti i post pubblicati, comprensivi di testo formattato (con escaping dei caratteri `<` e `>`), categoria (o "Generale" di default) e timestamp.
+
+### Sincronizzazione Background
+Per garantire un'esperienza fluida, `background-color.js` usa un approccio ibrido:
+1.  **Immediato:** Carica il colore da `localStorage` al `DOMContentLoaded`.
+2.  **Cloud:** Interroga Firestore al variare dello stato di autenticazione (`onAuthStateChanged`). Se il colore nel database differisce da quello locale, sovrascrive `localStorage` e aggiorna l'interfaccia. Tenta prima il recupero usando l'username, e se fallisce, effettua una query usando l'email.

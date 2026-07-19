@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Benvenuto su Spottio!</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="login.css">
+
+</head>
+<body class="flex items-center justify-center min-h-screen flex-col">
+
+    <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm mx-4">
+        <h2 id="welcome-title" class="text-2xl font-bold text-center text-gray-800 mb-8">Benvenuto su Spottio!</h2>
+        
+        <div id="forms-container">
+            <div id="login-form">
+                <form id="loginForm">
+                    <div class="mb-6">
+                        <input type="email" id="login-email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Inserisci la tua Email" required>
+                    </div>
+                    <div class="mb-2 relative"> 
+                        <input type="password" id="login-password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Inserisci la tua password" required>
+                        <button type="button" id="toggleLoginPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400">
+                            <svg id="eyeIconLogin" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="mb-6 text-right">
+                        <button type="button" id="tvForgotPassword" class="text-sm text-blue-600 hover:underline hover:text-blue-800 transition-colors">Password dimenticata?</button>
+                    </div>
+
+                    <div class="flex justify-between items-center space-x-4 mb-6">
+                        <button type="submit" id="login-button" class="w-1/2 bg-[#00bcd4] text-white py-3 rounded-lg font-semibold hover:bg-[#00a8bd] transition duration-300 ease-in-out">Accedi</button>
+                        <button type="button" id="show-signup" class="w-1/2 bg-gray-500 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition duration-300 ease-in-out">Registrati</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="signup-form" class="hidden">
+                <form id="signupForm">
+                    <div class="mb-6">
+                        <input type="text" id="signup-username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Scegli un nome utente" required>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <input type="email" id="signup-email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Inserisci la tua email" required>
+                    </div>
+
+                    <div class="mb-6 relative"> 
+                        <input type="password" id="signup-password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Crea una password" required>
+                        <button type="button" id="toggleSignupPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400">
+                            <svg id="eyeIconSignup" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="mb-6 flex items-start">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" id="signup-privacy" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" required>
+                        </div>
+                        <label id="label-privacy" for="signup-privacy" class="ml-2 text-sm text-gray-600">
+                            Accetto <a href="footer/privacy.html" class="text-blue-600 hover:underline">privacy</a> e <a href="footer/Policy.html" class="text-blue-600 hover:underline">Policy</a>
+                        </label>
+                    </div>
+
+                    <div class="flex justify-between items-center space-x-4 mb-6">
+                        <button type="button" id="show-login" class="w-1/2 bg-gray-500 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition duration-300 ease-in-out">Accedi</button>
+                        <button type="submit" id="signup-button" class="w-1/2 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-300 ease-in-out">Registrati</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="relative flex justify-center mt-6">
+    <button id="language-dropdown-button" class="flex items-center bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition duration-300 ease-in-out">
+        <span id="selected-lang-text">Italiano</span>
+        <img id="selected-lang-flag" src="https://flagcdn.com/it.svg" alt="Bandiera Italiana" class="h-4 w-6 ml-2">
+    </button>
+    <!-- Il menu a tendina verrà generato e iniettato qui -->
+    <div id="language-dropdown-container"></div>
+</div>
+        
+        <div id="message-container" class="mt-4 text-center text-sm font-medium"></div>
+    </div>
+
+    <footer class="mt-8 mb-4">
+        <div class="flex flex-wrap justify-center space-x-4">
+            <a href="footer/storia.html" class="bg-white text-gray-800 py-2 px-4 rounded-full shadow-md hover:bg-gray-200 transition duration-300 ease-in-out mb-2 sm:mb-0">Storia</a>
+            <a href="footer/policy.html" class="bg-white text-gray-800 py-2 px-4 rounded-full shadow-md hover:bg-gray-200 transition duration-300 ease-in-out mb-2 sm:mb-0">Policy</a>
+            <a href="footer/privacy.html" class="bg-white text-gray-800 py-2 px-4 rounded-full shadow-md hover:bg-gray-200 transition duration-300 ease-in-out mb-2 sm:mb-0">Privacy</a>
+            <!-- <a href="Spottio.apk" download class="bg-green-600 text-white py-2 px-4 rounded-full shadow-md hover:bg-green-700 transition duration-300 ease-in-out mb-2 sm:mb-0 flex items-center"> -->
+            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9997.9993-.9997c.5511 0 .9993.4486.9993.9997s-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9997.9993-.9997c.5511 0 .9993.4486.9993.9997s-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5674.1522l-2.0223 3.503C15.5902 8.1627 13.8605 7.643 12 7.643s-3.5902.5197-5.137 1.3067l-2.0223-3.503a.4164.4164 0 00-.5674-.1522.416.416 0 00-.1521.5676l1.9973 3.4592C2.6883 11.2311.4333 14.8694.0416 19.1667h23.9168c-.3917-4.2973-2.6467-7.9356-6.0754-10.2193z"/>
+            </svg>
+            APK</a>
+        </div>
+    </footer>
+
+    <script src="traduzioni/Italiano.js"></script>
+    <script src="traduzioni/Inglese.js"></script>
+    <script src="traduzioni/Spagnolo.js"></script>
+    <script src="traduzioni/Francese.js"></script>
+    <script src="traduzioni/Tedesco.js"></script>
+    <script src="traduzioni/Arabo.js"></script>
+    <script src="traduzioni/Russo.js"></script>
+    <script src="traduzioni/Giapponese.js"></script>
+    <script src="traduzioni/Olandese.js"></script>
+
+    <script src="Lingue_login.js"></script>
+
+    <script src="../load-firebase.js"></script>
+
+    <script src="../language-menu.js"></script>
+
+    <script src="ui.js"></script>
+    <script src="signup.js"></script>
+    <script src="login.js"></script>
+</body>
+</html>
+</body>
+
+</html>
