@@ -1,0 +1,17 @@
+/* Previene lo scroll orizzontale all'interno dell'area messaggi e garantisce il corretto layout flex */
+#messages-container {
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Aggiungi questo alla fine di chat.css */
+
+/* ==========================================
+   MOBILE LAYOUT LOGIC (< 1024px)
+   ========================================== */
+@media (max-width: 1023px) {
+    .hidden-mobile {
+        display: none !important;
+    }
+}
