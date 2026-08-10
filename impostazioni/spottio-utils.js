@@ -123,18 +123,27 @@ Object.assign(window.Spottio, {
     },
 
     sharePost: async function(postId, postText) {
-        const isHttp = window.location.protocol.startsWith('http');
-        const shareUrl = isHttp ? `${window.location.origin}/pubblici/pubblici.html?post=${postId}` : window.location.href.split('?')[0] + `?post=${postId}`;
-        const shareTitle = "Guarda questo spot su Spottio!";
-        const shareText = postText ? `"${postText.substring(0, 80)}..."` : shareTitle;
+    // Ricava l'URL base mantenendo eventuali sottocartelle dell'hosting (es. /nomerepo/)
+    const currentPath = window.location.pathname;
+    const basePath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+    
+    // Costruisce l'URL puntando esplicitamente al file pubblici.html
+    const shareUrl = `${window.location.origin}${basePath}/pubblici.html?post=${postId}`;
+    
+    const shareTitle = "Guarda questo spot su Spottio!";
+    const shareText = postText ? `"${postText.substring(0, 80)}..."` : shareTitle;
 
-        if (isHttp && navigator.share) {
-            try { await navigator.share({ title: shareTitle, text: shareText, url: shareUrl }); } catch (err) {}
-        } else {
-            try {
-                await navigator.clipboard.writeText(shareUrl);
-                alert("Link dello spot copiato negli appunti! Invialo a chi vuoi.");
-            } catch (err) { alert("Impossibile copiare il link negli appunti."); }
+    if (navigator.share) {
+        try { 
+            await navigator.share({ title: shareTitle, text: shareText, url: shareUrl }); 
+        } catch (err) {}
+    } else {
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            alert("Link dello spot copiato negli appunti! Invialo a chi vuoi.");
+        } catch (err) { 
+            alert("Impossibile copiare il link negli appunti."); 
         }
     }
+}
 });
