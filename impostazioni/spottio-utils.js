@@ -68,7 +68,7 @@ Object.assign(window.Spottio, {
         } catch (e) {
             console.error("Errore recupero profilo:", e);
         }
-        const fallbackProfile = { username: uid, userPfUri: "", isVerified: false, isPrivate: true };
+        const fallbackProfile = { username: uid, userPfUri: "", isVerified: false, isPrivate: false };
         window.userCache[uid] = fallbackProfile;
         return fallbackProfile;
     },
