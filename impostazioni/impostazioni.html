@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impostazioni</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../spot/spot.css">
+    <link rel="stylesheet" href="body.css">
+</head>
+<body class="flex min-h-screen">
+    
+    <!-- Navigazione a sinistra (Vanilla) -->
+    <div id="sidebar-container" class="w-1/5 bg-white p-6 rounded-r-2xl shadow-xl flex flex-col justify-start items-start sticky top-0 h-screen overflow-y-auto custom-scrollbar transition-all duration-300 shrink-0">
+        <h2 id="menu-title" class="text-2xl font-bold text-gray-800 mb-6 w-full"></h2>
+        <div id="nav-container" class="w-full"></div>
+    </div>
+
+    <!-- Contenitore Principale Impostazioni con v-cloak -->
+    <div id="vue-settings-app" v-cloak class="flex-grow p-8 flex items-center justify-center min-w-0">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl min-w-0 relative">
+            <h2 class="text-4xl font-bold text-gray-800 mb-4 text-center">{{ t('impostazioniTitle', 'Impostazioni') }}</h2>
+
+            <!-- Barra di Ricerca -->
+            <div class="relative mb-8">
+                <input type="text" v-model="searchQuery" :placeholder="t('searchSettingsPlaceholder', 'Cerca impostazioni...')" 
+                       class="w-full p-3 pl-10 rounded-xl border border-gray-300 focus:ring-2 focus:ring-gray-800 focus:outline-none transition duration-200">
+                <div class="absolute left-3 top-3.5 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Elenco Macro Sezioni Componentizzate -->
+            <div class="w-full min-w-0">
+                <macro-aspetto 
+                    :search-query="searchQuery" 
+                    :active-macro="activeMacro" 
+                    :active-section="activeSection" 
+                    :t="t"
+                    @toggle-macro="toggleMacro" 
+                    @toggle-section="toggleSection">
+                </macro-aspetto>
+
+                <macro-sicurezza 
+                    :search-query="searchQuery" 
+                    :active-macro="activeMacro" 
+                    :active-section="activeSection" 
+                    :t="t"
+                    :is-admin="isAdmin"
+                    @toggle-macro="toggleMacro" 
+                    @toggle-section="toggleSection">
+                </macro-sicurezza>
+
+                <macro-privacy 
+                    :search-query="searchQuery" 
+                    :active-macro="activeMacro" 
+                    :active-section="activeSection" 
+                    :t="t"
+                    @toggle-macro="toggleMacro" 
+                    @toggle-section="toggleSection">
+                </macro-privacy>
+
+                <macro-info 
+                    :search-query="searchQuery" 
+                    :active-macro="activeMacro" 
+                    :active-section="activeSection" 
+                    :current-lang="currentLang"
+                    :t="t"
+                    @toggle-macro="toggleMacro" 
+                    @toggle-section="toggleSection">
+                </macro-info>
+
+                <!-- Amministrazione (Visibile solo se Admin) -->
+                <macro-amministrazione 
+                    :search-query="searchQuery" 
+                    :active-macro="activeMacro" 
+                    :active-section="activeSection" 
+                    :is-admin="isAdmin" 
+                    :t="t"
+                    @toggle-macro="toggleMacro" 
+                    @toggle-section="toggleSection">
+                </macro-amministrazione>
+
+                <!-- Impostazioni Avanzate (Logout ed Elimina Account) -->
+                <macro-avanzate 
+                    :search-query="searchQuery" 
+                    :active-macro="activeMacro" 
+                    :active-section="activeSection" 
+                    :is-admin="isAdmin" 
+                    :t="t"
+                    @toggle-macro="toggleMacro" 
+                    @toggle-section="toggleSection">
+                </macro-avanzate>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. Firebase -->
+    <script src="../core/load-firebase.js"></script>
+
+    <!-- 2. Testi Legali -->
+    <script src="../testiDoppi/policy.js"></script>
+    <script src="../testiDoppi/storia.js"></script>
+    <script src="../testiDoppi/privacy.js"></script>
+
+    <!-- 3. Helper Condivisi -->
+    <script src="settings-shared.js"></script>
+
+    <!-- 4. Macro: Aspetto e Lingua -->
+    <script src="Aspetto-e-Lingua/aspetto-i18n.js"></script>
+    <script src="Aspetto-e-Lingua/macro-aspetto.js"></script>
+    <script src="Aspetto-e-Lingua/macro-aspetto.component.js"></script>
+
+    <!-- 5. Macro: Accesso e Sicurezza -->
+    <script src="Accesso-e-Sicurezza/sicurezza-i18n.js"></script>
+    <script src="Accesso-e-Sicurezza/macro-sicurezza.js"></script>
+    <script src="Accesso-e-Sicurezza/macro-sicurezza.component.js"></script>
+
+    <!-- 6. Macro: Privacy -->
+    <script src="Privacy/privacy-i18n.js"></script>
+    <script src="Privacy/macro-privacy.js"></script>
+    <script src="Privacy/macro-privacy.component.js"></script>
+
+    <!-- 7. Macro: Info e Supporto -->
+    <script src="Info-e-Supporto/info-i18n.js"></script>
+    <script src="Info-e-Supporto/macro-info.js"></script>
+    <script src="Info-e-Supporto/macro-info.component.js"></script>
+
+    <!-- 8. Macro: Amministrazione -->
+    <script src="Amministrazione/macro-amministrazione.component.js"></script>
+
+    <!-- 9. Macro: Impostazioni Avanzate -->
+    <script src="Impostazioni-Avanzate/macro-avanzate.component.js"></script>
+
+    <!-- 10. Orchestratore App Vue Principale -->
+    <script src="impostazioni-app.js"></script>
+
+    <!-- 11. Navbar -->
+    <script src="../core/load-nav-scripts.js"></script>
+</body>
+</html>

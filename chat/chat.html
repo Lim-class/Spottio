@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messaggi</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="chat.css">
+    <link rel="stylesheet" href="../impostazioni/body.css">
+</head>
+<body class="flex min-h-screen relative">
+
+    <div id="sidebar-container" class="w-1/5 bg-white p-6 rounded-r-2xl shadow-xl flex flex-col justify-start items-start sticky top-0 h-screen transition-all duration-300">
+        <h2 id="menu-title" class="text-2xl font-bold text-gray-800 mb-6 w-full"></h2>
+        <div id="nav-container" class="w-full"></div>
+    </div>
+    
+    <div id="vue-chat-app" v-cloak class="flex-grow p-4 lg:p-8 flex h-screen overflow-hidden">
+        
+        <!-- SIDEBAR -->
+        <chat-sidebar
+            :chat-list="chatList"
+            :active-chat="activeChat"
+            v-model:search-query="searchQuery"
+            :search-results="searchResults"
+            :is-chat-active-mobile="isChatActiveMobile"
+            :get-avatar="getAvatar"
+            :verified-icon="verifiedIcon"
+            @search-users="searchUsers"
+            @open-group-modal="showGroupModal = true"
+            @select-chat="selectExistingChat"
+            @select-from-search="selectChatFromSearch">
+        </chat-sidebar>
+
+        <!-- MESSAGGI E CHAT -->
+        <chat-messages
+            :active-chat="activeChat"
+            :is-chat-active-mobile="isChatActiveMobile"
+            :ephemeral-duration="ephemeralDuration"
+            :get-ephemeral-label="getEphemeralLabel"
+            v-model:selected-bg="selectedBg"
+            :bg-options="bgOptions"
+            :bg-style="bgStyle"
+            :messages="messages"
+            :has-more-messages="hasMoreMessages"
+            :is-loading-more="isLoadingMore"
+            :open-dropdown-id="openDropdownId"
+            :editing-msg-id="editingMsgId"
+            v-model:edit-msg-text="editMsgText"
+            :mention-results="mentionResults"
+            :replying-to="replyingTo"
+            :is-recording-audio="isRecordingAudio"
+            :audio-recording-seconds="audioRecordingSeconds"
+            v-model:new-message="newMessage"
+            :get-current-uid="getCurrentUid"
+            :get-avatar="getAvatar"
+            :verified-icon="verifiedIcon"
+            @go-back="goBackToList"
+            @group-info-click="handleGroupInfoClick"
+            @ephemeral-change="onEphemeralSelectChange"
+            @change-bg="onBackgroundChange"
+            @upload-custom-bg="uploadCustomBg"
+            @load-older="loadOlderMessages"
+            @scroll-messages="handleMessagesScroll"
+            @start-reply="startReply"
+            @toggle-dropdown="toggleMsgDropdown"
+            @view-msg-info="viewMessageInfo"
+            @start-edit="startEdit"
+            @delete-for-me="deleteMessageForMe"
+            @delete-for-everyone="deleteMessageForEveryone"
+            @scroll-to-msg="scrollToMessage"
+            @cancel-edit="cancelEdit"
+            @save-edit="saveEdit"
+            @toggle-reaction="toggleReaction"
+            @insert-mention="insertMention"
+            @cancel-reply="cancelReply"
+            @cancel-audio="cancelAudioRecording"
+            @stop-audio="stopAudioRecording"
+            @start-audio="startAudioRecording"
+            @send-media="sendMediaMessage"
+            @send-message="sendMessage"
+            @handle-mention="handleMentionInput">
+        </chat-messages>
+
+        <!-- MODALI CONDIVISI (CHAT-ENGINE) -->
+        <message-info-modal 
+            :show="showMsgInfoModal" 
+            :selected-msg-info="selectedMsgInfo"
+            accent-color="blue"
+            @close="closeMsgInfoModal">
+        </message-info-modal>
+
+        <group-create-modal 
+            :show="showGroupModal"
+            :is-uploading-group-avatar="isUploadingGroupAvatar"
+            :new-group-avatar-url="newGroupAvatarUrl"
+            v-model:new-group-name="newGroupName"
+            v-model:group-search-query="groupSearchQuery"
+            :group-search-results="groupSearchResults"
+            :selected-group-members="selectedGroupMembers"
+            @close="closeGroupModal"
+            @search-members="searchGroupMembers"
+            @add-member="addGroupMember"
+            @remove-member="removeGroupMember"
+            @upload-avatar="uploadNewGroupAvatar"
+            @confirm-create="confirmCreateGroup">
+        </group-create-modal>
+
+        <group-info-modal
+            :show="showGroupInfoModal"
+            :group-info="groupInfo"
+            v-model:new-member-username="newMemberUsername"
+            @close="showGroupInfoModal = false"
+            @edit-name="editGroupName"
+            @change-avatar="changeGroupAvatar"
+            @kick-member="kickGroupMember"
+            @add-new-member="addNewGroupMember"
+            @leave-group="leaveGroup">
+        </group-info-modal>
+
+        <ephemeral-modal
+            :show="showCustomEphemeralModal"
+            v-model:custom-ephemeral-value="customEphemeralValue"
+            v-model:custom-ephemeral-unit="customEphemeralUnit"
+            accent-color="blue"
+            @close="closeCustomEphemeralModal"
+            @confirm="confirmCustomEphemeral">
+        </ephemeral-modal>
+
+    </div>
+
+    <!-- Script Base -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="spottio-crypto.js"></script>
+    <script src="../core/load-firebase.js"></script>
+    <script src="../core/load-shared-scripts.js"></script>
+    <script src="../posta/posta-media.js"></script>
+
+    <!-- Motore Messaggistica Dedicato (Caricamento centralizzato sincrono) -->
+    <script src="../chat-engine/load-chat-engine.js"></script>
+
+    <!-- Composables e Helpers Specifici Chat -->
+    <script src="core/chat-helpers.js"></script>
+    <script src="theme/use-chat-theme.js"></script>
+    <script src="groups/use-chat-groups.js"></script>
+    <script src="messages/use-chat-messages.js"></script>
+
+    <!-- Componenti UI Chat -->
+    <script src="sidebar/chat-sidebar.component.js"></script>
+    <script src="messages/chat-messages.component.js"></script>
+    <script src="groups/group-create-modal.component.js"></script>
+    <script src="groups/group-info-modal.component.js"></script>
+
+    <!-- Core App Bootstrap -->
+    <script src="core/chat-main.js"></script>
+    <script src="../core/load-nav-scripts.js"></script>
+</body>
+</html>

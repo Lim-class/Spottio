@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benvenuto su Spottio!</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="login.css">
+    <link rel="stylesheet" href="../impostazioni/body.css">
+    
+</head>
+<body class="flex items-center justify-center min-h-screen flex-col bg-[#e0f2fe]">
+
+    <div id="vue-login-app" v-cloak class="w-full flex flex-col items-center">
+        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm mx-4 relative">
+            
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">{{ t.welcomeTitle || 'Benvenuto su Spottio!' }}</h2>
+            <p class="text-center text-sm text-gray-500 font-medium mb-8">Spotta adesso, vivi lo Spot.</p>
+            
+            <!-- FORM CONTAINER -->
+            <div>
+                <!-- LOGIN FORM -->
+                <form v-if="currentMode === 'login'" @submit.prevent="handleLogin">
+                    <div class="mb-6">
+                        <input type="email" v-model="loginData.email" :placeholder="t.loginUsernamePlaceholder || 'Inserisci la tua Email'" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div class="mb-2 relative"> 
+                        <input :type="showLoginPassword ? 'text' : 'password'" v-model="loginData.password" :placeholder="t.loginPasswordPlaceholder || 'Inserisci la tua password'" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <button type="button" @click="showLoginPassword = !showLoginPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400">
+                            <svg v-if="showLoginPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                            </svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="mb-6 text-right">
+                        <button type="button" @click="handleForgotPassword" class="text-sm text-blue-600 hover:underline hover:text-blue-800 transition-colors">Password dimenticata?</button>
+                    </div>
+
+                    <div class="flex justify-between items-center space-x-4 mb-6">
+                        <button type="submit" :disabled="isLoading" class="w-1/2 bg-[#00bcd4] text-white py-3 rounded-lg font-semibold hover:bg-[#00a8bd] transition duration-300 ease-in-out disabled:opacity-50">
+                            {{ isLoading ? '...' : (t.loginButton || 'Accedi') }}
+                        </button>
+                        <button type="button" @click="currentMode = 'signup'; clearMessage()" class="w-1/2 bg-gray-500 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition duration-300 ease-in-out">
+                            {{ t.showSignupButton || 'Registrati' }}
+                        </button>
+                    </div>
+                </form>
+
+                <!-- SIGNUP FORM -->
+                <form v-if="currentMode === 'signup'" @submit.prevent="handleSignup">
+                    <div class="mb-6">
+                        <input type="text" v-model="signupData.username" :placeholder="t.signupUsernamePlaceholder || 'Scegli un nome utente'" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <input type="email" v-model="signupData.email" placeholder="Inserisci la tua email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-xs text-gray-500 mb-1 pl-1 font-medium">Data di nascita (obbligatoria)</label>
+                        <input type="date" v-model="signupData.dob" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700" required>
+                    </div>
+
+                    <div class="mb-6 relative"> 
+                        <input :type="showSignupPassword ? 'text' : 'password'" v-model="signupData.password" :placeholder="t.signupPasswordPlaceholder || 'Crea una password'" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <button type="button" @click="showSignupPassword = !showSignupPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400">
+                            <svg v-if="showSignupPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                            </svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="mb-6 flex items-start">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" v-model="signupData.privacy" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" required>
+                        </div>
+                        <label class="ml-2 text-sm text-gray-600" v-html="t.labelPrivacy || 'Accetto <a href=\'footer/info.html?section=privacy\' class=\'text-blue-600 hover:underline\'>privacy</a> e <a href=\'footer/info.html?section=policy\' class=\'text-blue-600 hover:underline\'>Policy</a>'"></label>
+                    </div>
+
+                    <div class="flex justify-between items-center space-x-4 mb-6">
+                        <button type="button" @click="currentMode = 'login'; clearMessage()" class="w-1/2 bg-gray-500 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition duration-300 ease-in-out">
+                            {{ t.showLoginButton || 'Accedi' }}
+                        </button>
+                        <button type="submit" :disabled="isLoading" class="w-1/2 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-300 ease-in-out disabled:opacity-50">
+                            {{ isLoading ? '...' : (t.signupButton || 'Registrati') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- SELETTORE LINGUA CON BANDIERE -->
+            <div class="relative flex justify-center mt-6">
+                <button 
+                    type="button"
+                    @click="showLanguageMenu = !showLanguageMenu" 
+                    class="flex items-center bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition duration-300 ease-in-out">
+                    <span>{{ currentLangObj.text }}</span>
+                    <!-- Bandiera della lingua attiva corrente -->
+                    <img 
+                        :src="'https://flagcdn.com/' + currentLangObj.flag" 
+                        :alt="currentLangObj.alt" 
+                        class="h-4 w-6 ml-2 object-contain border border-gray-300/40 rounded-sm">
+                </button>
+                
+                <!-- Menu a tendina lingua con Bandiere -->
+                <div 
+                    v-if="showLanguageMenu" 
+                    class="absolute bottom-full mb-2 bg-white rounded-xl shadow-2xl border border-gray-200 py-1 w-56 max-h-64 overflow-y-auto z-50 divide-y divide-gray-100">
+                    <button 
+                        v-for="lang in availableLanguages" 
+                        :key="lang.code" 
+                        type="button"
+                        @click="changeLanguage(lang.code)" 
+                        class="w-full flex items-center px-4 py-2.5 hover:bg-gray-50 transition text-left">
+                        <!-- Bandiera specifica della singola opzione (inclusa kp.svg e kr.svg) -->
+                        <img 
+                            :src="'https://flagcdn.com/' + lang.flag" 
+                            :alt="lang.alt" 
+                            class="h-4 w-6 mr-3 shrink-0 object-contain border border-gray-200 rounded-sm shadow-xs">
+                        <span class="text-sm font-medium text-gray-700 truncate">{{ lang.text }}</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Messaggi Globali -->
+            <div v-if="message.text" :class="['mt-4 text-center text-sm font-medium', message.isError ? 'text-red-600' : 'text-green-600']">
+                {{ message.text }}
+            </div>
+        </div>
+
+        <!-- MODALE ACCOUNT BANNATO / RICORSO -->
+        <div v-if="modals.ban.show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 text-gray-800 relative animate-fade-in">
+                <div class="mx-auto w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+
+                <h3 class="text-xl font-bold text-center text-gray-900 mb-2">Account Sospeso</h3>
+                
+                <div class="bg-red-50 border border-red-200 rounded-xl p-3.5 mb-4 text-sm text-gray-700 space-y-1">
+                    <p><strong>Motivazione:</strong> <span class="text-red-700">{{ modals.ban.reason }}</span></p>
+                    <p><strong>Durata:</strong> <span class="font-medium">{{ modals.ban.duration }}</span></p>
+                </div>
+
+                <p class="text-xs text-gray-500 mb-3 text-center">
+                    Se ritieni che questo provvedimento sia frutto di un errore o ingiustificato, puoi inviare una richiesta di ricorso al nostro team di moderazione.
+                </p>
+
+                <!-- Form Ricorso -->
+                <form @submit.prevent="submitAppeal" class="space-y-3">
+                    <textarea v-model="modals.ban.appealText" rows="3" class="w-full p-3 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder="Spiega brevemente le tue ragioni..." required></textarea>
+                    
+                    <div v-if="modals.ban.statusMsg" :class="['text-xs font-semibold text-center block', modals.ban.isError ? 'text-red-600' : 'text-green-600']">
+                        {{ modals.ban.statusMsg }}
+                    </div>
+
+                    <div class="flex space-x-3 pt-2">
+                        <button type="button" @click="modals.ban.show = false" class="w-1/2 py-2.5 px-4 bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-300 transition">
+                            Chiudi
+                        </button>
+                        <button type="submit" :disabled="modals.ban.isSubmitting" class="w-1/2 py-2.5 px-4 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-50">
+                            {{ modals.ban.isSubmitting ? 'Invio...' : 'Invia Ricorso' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-8 mb-4 w-full">
+        <div class="flex flex-wrap justify-center space-x-4">
+            <a href="footer/info.html?section=storia" class="bg-white text-gray-800 py-2 px-4 rounded-full shadow-md hover:bg-gray-200 transition duration-300 ease-in-out mb-2 sm:mb-0">Storia</a>
+            <a href="footer/info.html?section=policy" class="bg-white text-gray-800 py-2 px-4 rounded-full shadow-md hover:bg-gray-200 transition duration-300 ease-in-out mb-2 sm:mb-0">Policy</a>
+            <a href="footer/info.html?section=privacy" class="bg-white text-gray-800 py-2 px-4 rounded-full shadow-md hover:bg-gray-200 transition duration-300 ease-in-out mb-2 sm:mb-0">Privacy</a>
+        </div>
+    </footer>
+
+    <!-- Traduzioni -->
+    <script src="traduzioni/Italiano.js"></script>
+    <script src="traduzioni/Inglese.js"></script>
+    <script src="traduzioni/Spagnolo.js"></script>
+    <script src="traduzioni/Francese.js"></script>
+    <script src="traduzioni/Tedesco.js"></script>
+    <script src="traduzioni/Arabo.js"></script>
+    <script src="traduzioni/Russo.js"></script>
+    <script src="traduzioni/Giapponese.js"></script>
+    <script src="traduzioni/Olandese.js"></script>
+    <script src="traduzioni/Coreano.js"></script>
+    <script src="Lingue_login.js"></script>
+
+    <script src="../core/language-menu.js"></script>
+    <!-- Firebase -->
+    <script src="../core/load-firebase.js"></script>
+
+    <!-- Motore Vue Centralizzato -->
+    <script src="loginApp.js"></script>
+</body>
+</html>

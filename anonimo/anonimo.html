@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messaggi Anonimi - Spottio</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../chat/chat.css">
+    <link rel="stylesheet" href="../impostazioni/body.css">
+</head>
+<body class="flex min-h-screen relative">
+
+    <!-- 1. SIDEBAR NAVIGAZIONE SPOTTIO -->
+    <div id="sidebar-container" class="w-1/5 bg-white p-6 rounded-r-2xl shadow-xl flex flex-col justify-start items-start sticky top-0 h-screen transition-all duration-300">
+        <h2 id="menu-title" class="text-2xl font-bold text-gray-800 mb-6 w-full"></h2>
+        <div id="nav-container" class="w-full"></div>
+    </div>
+    
+    <!-- 2. APPLICAZIONE CHAT ANONIMA -->
+    <div id="vue-anon-app" v-cloak class="flex-grow p-4 lg:p-8 flex h-screen overflow-hidden">
+        
+        <!-- SIDEBAR CHAT -->
+        <div id="chat-list-container" 
+            class="w-full lg:w-1/3 bg-white p-6 rounded-2xl lg:rounded-l-2xl lg:rounded-r-none shadow-xl flex-col h-full overflow-hidden" 
+            :class="isChatActiveMobile ? 'hidden lg:flex' : 'flex'">
+            
+            <div class="flex items-center gap-2 mb-3 shrink-0">
+                <a href="../chat/chat.html" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2.5 rounded-xl transition-colors shrink-0 flex items-center justify-center" title="Torna alle chat standard">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                </a>
+
+                <button @click="openNewAnonModal" class="bg-purple-100 text-purple-700 hover:bg-purple-200 p-2.5 rounded-xl transition-colors shrink-0 flex items-center justify-center" title="Scrivi in Anonimo">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+                
+                <div class="relative flex-grow">
+                    <input type="text" v-model="searchQuery" placeholder="Filtra conversazioni anonime..." class="w-full p-2.5 pl-10 rounded-xl bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Selettore: Ricevuti vs Inviati da me -->
+            <div class="flex rounded-xl bg-gray-100 p-1 mb-4 shrink-0">
+                <button @click="activeTab = 'received'" :class="['flex-1 py-1.5 text-xs font-bold rounded-lg transition-all', activeTab === 'received' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700']">
+                    Ricevuti ({{ receivedThreads.length }})
+                </button>
+                <button @click="activeTab = 'sent'" :class="['flex-1 py-1.5 text-xs font-bold rounded-lg transition-all', activeTab === 'sent' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700']">
+                    Inviati da me ({{ sentThreads.length }})
+                </button>
+            </div>
+
+            <!-- Lista Thread Anonimi -->
+            <div class="flex-grow overflow-y-auto space-y-4 custom-scrollbar">
+                <div v-if="filteredThreads.length === 0" class="text-center py-12 text-gray-400 text-xs italic">
+                    {{ activeTab === 'received' ? 'Nessun messaggio anonimo ricevuto.' : 'Non hai ancora inviato messaggi anonimi.' }}
+                </div>
+
+                <div v-for="thread in filteredThreads" :key="thread.id" @click="selectThread(thread)" :class="['flex items-center p-3 mb-2 rounded-xl cursor-pointer transition-all duration-200 w-full min-w-0', activeThread?.id === thread.id ? 'bg-purple-100 shadow-sm' : 'hover:bg-gray-100']">
+                    <div v-if="thread.authorUid === getCurrentUid()" v-html="getAvatar(thread.targetAvatarUrl, thread.displayTitle, 'w-12 h-12 mr-3 text-lg shrink-0', false)"></div>
+                    <div v-else class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 mr-3 border border-purple-200 bg-purple-100 text-purple-700 text-lg">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                        </svg>
+                    </div>
+
+                    <div class="flex-grow overflow-hidden min-w-0">
+                        <div class="flex items-center justify-between gap-1">
+                            <div class="flex items-center gap-0.5 truncate">
+                                <h4 class="font-semibold text-gray-800 truncate text-sm">{{ thread.displayTitle }}</h4>
+                                <span v-if="thread.targetIsVerified && thread.authorUid === getCurrentUid()" v-html="verifiedIcon('w-4 h-4 text-blue-500 ml-1 inline-block shrink-0')"></span>
+                            </div>
+                            <span v-if="thread.isBlocked" class="text-[9px] bg-red-100 text-red-600 font-bold px-1.5 py-0.5 rounded shrink-0">Bloccato</span>
+                        </div>
+                        <p class="text-xs text-gray-500 truncate">{{ thread.lastMessage }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENUTO CHAT -->
+        <div id="chat-content-container" class="w-full lg:w-2/3 bg-white p-6 rounded-2xl lg:rounded-r-2xl lg:rounded-l-none shadow-xl flex flex-col h-[calc(100vh-4rem)] relative" :class="{'hidden-mobile': !isChatActiveMobile}">
+            
+            <!-- Header Chat -->
+            <div v-if="activeThread" class="flex items-center justify-between border-b pb-4 mb-4 shrink-0">
+                <div class="flex items-center w-full max-w-[50%] sm:max-w-[60%]">
+                    <button @click="goBackToList" class="mr-3 p-2 lg:hidden bg-gray-100 hover:bg-gray-200 rounded-full transition-colors shrink-0">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <div class="flex items-center p-2 rounded-lg transition-colors overflow-hidden flex-grow">
+                        <div v-if="!isReceiver" v-html="getAvatar(activeThread.targetAvatarUrl, activeThread.displayTitle, 'w-12 h-12 mr-4 shrink-0', false)"></div>
+                        <div v-else class="w-12 h-12 rounded-full flex items-center justify-center bg-purple-100 text-purple-700 mr-4 shrink-0">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                        </div>
+
+                        <div class="flex flex-col min-w-0">
+                            <h3 class="text-xl sm:text-2xl font-bold text-gray-800 truncate flex items-center gap-1">
+                                <span>{{ activeThread.displayTitle }}</span>
+                                <span v-if="activeThread.targetIsVerified && !isReceiver" v-html="verifiedIcon('w-5 h-5 text-blue-500 ml-1 inline-block shrink-0')"></span>
+                            </h3>
+                            <span class="text-xs text-gray-400 truncate">
+                                {{ isReceiver ? 'Risposta anonima bidirezionale' : 'I tuoi messaggi vengono inviati come Anonimo' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-2 shrink-0">
+                    <button v-if="isReceiver && !activeThread.isBlocked" @click="blockThread" class="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors" title="Blocca questo utente definitivamente">
+                        Blocca
+                    </button>
+
+                    <!-- Selettore Modalità Effimera -->
+                    <div class="flex items-center bg-gray-100 rounded-lg p-1" title="Messaggi Effimeri (Salvati sul DB)">
+                        <svg class="w-4 h-4 text-gray-500 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <select :value="[0, 86400, 604800].includes(ephemeralDuration) ? ephemeralDuration : 'custom_active'" 
+                                @change="onEphemeralSelectChange" 
+                                class="text-xs bg-transparent p-1.5 text-gray-700 font-semibold focus:outline-none cursor-pointer max-w-[130px] truncate">
+                            <option :value="0">Effimeri: No</option>
+                            <option :value="86400">24 Ore</option>
+                            <option :value="604800">7 Giorni</option>
+                            <option v-if="![0, 86400, 604800].includes(ephemeralDuration)" value="custom_active">
+                                {{ getEphemeralLabel }}
+                            </option>
+                            <option value="custom">⏱️ Personalizzato...</option>
+                        </select>
+                    </div>
+
+                    <!-- Scelta sfondo -->
+                    <select v-model="selectedBg" @change="changeBackground" class="text-sm p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer max-w-[110px] sm:max-w-none truncate">
+                        <option value="default">Sfondo Default</option>
+                        <option v-for="color in bgOptions" :key="color.hex" :value="color.hex">{{ color.nome }}</option>
+                        <option value="custom">Personalizzato...</option>
+                    </select>
+                    <input type="file" ref="bgUploadInput" @change="uploadCustomBg" class="hidden" accept="image/*">
+                </div>
+            </div>
+
+            <!-- Contenitore Messaggi con Paginazione a 5 -->
+            <div id="messages-container" ref="messagesContainer" @scroll="handleMessagesScroll" class="flex-grow overflow-y-auto space-y-4 p-4 border rounded-lg mb-4 custom-scrollbar transition-all duration-300" :style="bgStyle">
+                <p v-if="!activeThread" class="text-gray-500 text-center text-lg my-auto h-full flex items-center justify-center">Seleziona una chat anonima per visualizzare i messaggi.</p>
+                
+                <template v-else>
+                    <div v-if="hasMoreMessages" class="flex justify-center py-2">
+                        <button @click="loadOlderMessages" :disabled="isLoadingMore" class="text-xs bg-white text-purple-600 px-3 py-1.5 rounded-full border border-purple-200 shadow-sm hover:bg-purple-50 transition-all font-semibold flex items-center gap-1">
+                            <svg v-if="isLoadingMore" class="animate-spin h-3.5 w-3.5 text-purple-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                            <span>{{ isLoadingMore ? 'Caricamento...' : 'Carica precedenti (5)' }}</span>
+                        </button>
+                    </div>
+
+                    <div v-for="(msg) in messages" :key="msg.id" :id="'msg-' + msg.id">
+                        <div v-if="msg.showDateSeparator" class="flex justify-center my-6">
+                            <div class="bg-purple-50 text-purple-700 text-xs font-bold px-4 py-1.5 rounded-full shadow-sm border border-purple-100 uppercase tracking-wider">{{ msg.dateLabel }}</div>
+                        </div>
+
+                        <div :class="['w-full flex mb-3 px-2 items-start gap-2.5', msg.isMe ? 'justify-end' : 'justify-start']">
+                            <div v-if="!msg.isMe">
+                                <div v-if="isReceiver" class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 text-xs font-bold mt-0.5 border border-purple-200">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                                </div>
+                                <div v-else v-html="getAvatar(activeThread.targetAvatarUrl, activeThread.displayTitle, 'w-8 h-8 mt-0.5 text-xs shrink-0', false)"></div>
+                            </div>
+                            
+                            <div :class="['relative w-fit max-w-[85%] sm:max-w-[55%] px-4 py-2.5 shadow-sm flex flex-col group transition-all duration-200', msg.isMe ? 'bg-purple-600 text-white rounded-2xl rounded-tr-none' : 'bg-white text-gray-800 rounded-2xl rounded-tl-none border border-gray-200']">
+                                
+                                <div :class="['absolute top-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20 flex gap-1', msg.isMe ? '-left-20' : '-right-20']">
+                                    <button @click.stop="startReply(msg)" title="Rispondi" class="p-1.5 bg-white text-gray-500 hover:text-purple-600 hover:bg-gray-100 rounded-full shadow border border-gray-200">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 015 5v3M3 10l6-6m-6 6l6 6"/></svg>
+                                    </button>
+                                    <button @click.stop="toggleMsgDropdown(msg.id)" title="Altre opzioni" class="p-1.5 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full shadow border border-gray-200">
+                                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 10a2 2 0 100 4 2 2 0 000-4zM12 4a2 2 0 100 4 2 2 0 000-4zM12 16a2 2 0 100 4 2 2 0 000-4z"/></svg>
+                                    </button>
+                                    
+                                    <div v-if="openDropdownId === msg.id" class="absolute left-0 mt-8 w-44 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden text-sm py-1">
+                                        <button v-if="msg.isMe" @click="viewMessageInfo(msg)" class="w-full text-left px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            Info messaggio
+                                        </button>
+                                        
+                                        <button v-if="msg.isMe && !msg.isDeleted" @click="startEdit(msg)" class="w-full text-left px-3 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            Modifica
+                                        </button>
+
+                                        <button @click="deleteMessageForMe(msg.id)" class="w-full text-left px-3 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2 border-t border-gray-100">
+                                            <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            Elimina per me
+                                        </button>
+
+                                        <button v-if="msg.isMe && !msg.isDeleted" @click="deleteMessageForEveryone(msg.id)" class="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-gray-100">
+                                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            Elimina per tutti
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <span v-if="!msg.isMe" class="text-[10px] font-bold text-purple-600 block mb-1">
+                                    {{ isReceiver ? 'Anonimo' : activeThread.displayTitle }}
+                                </span>
+
+                                <!-- Quote Risposta -->
+                                <div v-if="msg.replyTo" @click="scrollToMessage(msg.replyTo.id)" class="mb-2 p-2 rounded-lg text-xs cursor-pointer border-l-4 overflow-hidden border-purple-400" :class="msg.isMe ? 'bg-purple-700/50 text-purple-100' : 'bg-gray-100 text-gray-600'">
+                                    <span class="font-bold block text-[11px]">{{ msg.replyTo.senderName }}</span>
+                                    <p class="truncate text-[11px] opacity-90">{{ msg.replyTo.text }}</p>
+                                </div>
+
+                                <!-- Testo Messaggio -->
+                                <div v-if="editingMsgId !== msg.id" v-html="msg.contentHtml" class="break-words"></div>
+                                <div v-else class="w-full min-w-[200px] mt-1 text-gray-800">
+                                    <textarea v-model="editMsgText" class="w-full p-2 text-sm rounded-lg border border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white" rows="2"></textarea>
+                                    <div class="flex justify-end gap-1.5 mt-2">
+                                        <button @click="cancelEdit" class="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-600 rounded">Annulla</button>
+                                        <button @click="saveEdit(msg.id)" class="px-2 py-1 text-xs font-semibold bg-purple-600 text-white rounded">Salva</button>
+                                    </div>
+                                </div>
+
+                                <!-- Reazioni Emoji -->
+                                <div v-if="Object.keys(msg.reactions || {}).length > 0" class="flex flex-wrap gap-1 mt-1.5">
+                                    <span v-for="(users, emoji) in msg.reactions" :key="emoji" @click="toggleReaction(msg, emoji)" :class="['text-xs px-2 py-0.5 rounded-full cursor-pointer border transition-transform active:scale-90', users.includes(getCurrentUid()) ? 'bg-purple-100 border-purple-300 text-purple-800' : 'bg-white/80 border-gray-200 text-gray-700']">
+                                        {{ emoji }} {{ users.length }}
+                                    </span>
+                                </div>
+
+                                <div class="hidden group-hover:flex gap-1.5 mt-1 pt-1 border-t border-white/20 text-xs">
+                                    <button v-for="emoji in ['👍', '❤️', '😂', '🔥', '👏']" :key="emoji" @click="toggleReaction(msg, emoji)" class="hover:scale-125 transition-transform">{{ emoji }}</button>
+                                </div>
+
+                                <!-- Footer Bolla -->
+                                <div class="flex justify-end items-center mt-1.5 gap-1.5">
+                                    <span v-if="msg.isEphemeral" title="Messaggio Effimero" class="text-[10px] opacity-75">⏱️</span>
+                                    <span v-if="msg.isEdited && !msg.isDeleted" class="text-[10px] italic opacity-75">(modificato)</span>
+                                    <span :class="['text-[10px] font-medium', msg.isMe ? 'text-purple-200' : 'text-gray-400']">{{ msg.timeStr }}</span>
+                                    
+                                    <span v-if="msg.isMe && !msg.isDeleted" class="flex items-center">
+                                        <svg v-if="!msg.isDelivered" class="w-3.5 h-3.5 text-purple-300 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                        <svg v-else-if="msg.isRead" class="w-4 h-4 text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2 13l4 4L16 7M8 13l4 4L22 7"></path>
+                                        </svg>
+                                        <svg v-else class="w-4 h-4 text-purple-200 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2 13l4 4L16 7M8 13l4 4L22 7"></path>
+                                        </svg>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Avviso Thread Bloccato -->
+            <div v-if="activeThread && activeThread.isBlocked" class="p-3 bg-red-50 text-red-600 text-xs rounded-xl text-center font-semibold mb-2">
+                Questa conversazione anonima è stata bloccata. Non è possibile inviare altri messaggi.
+            </div>
+
+            <!-- Avviso Limite 2 Messaggi senza risposta -->
+            <div v-else-if="activeThread && isAnonWaitingForReply" class="p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl text-center font-medium mb-2 flex items-center justify-center gap-2">
+                <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span>Hai inviato 2 messaggi consecutivi. Attendi che l'utente risponda prima di poterne scrivere altri.</span>
+            </div>
+
+            <!-- Banner Risposta -->
+            <div v-if="replyingTo" class="flex items-center justify-between p-2.5 mb-2 bg-purple-50 border-l-4 border-purple-500 rounded-r-lg">
+                <div class="overflow-hidden">
+                    <p class="text-xs font-bold text-purple-700">Risposta a {{ replyingTo.senderName }}</p>
+                    <p class="text-xs text-gray-600 truncate">{{ replyingTo.rawText }}</p>
+                </div>
+                <button @click="cancelReply" class="text-gray-400 hover:text-gray-600 p-1 text-lg leading-none font-bold">×</button>
+            </div>
+
+            <!-- Registratore Audio in corso -->
+            <div v-if="isRecordingAudio" class="flex w-full shrink-0 gap-3 items-center p-3 bg-red-50 border border-red-200 rounded-xl mb-1">
+                <div class="w-3 h-3 rounded-full bg-red-600 animate-ping"></div>
+                <span class="text-sm font-bold text-red-600 flex-grow">Registrazione: {{ audioRecordingSeconds }}s</span>
+                <button type="button" @click="cancelAudioRecording" class="px-3 py-1.5 text-xs font-semibold bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg">Annulla</button>
+                <button type="button" @click="stopAudioRecording" class="px-4 py-1.5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow">Invia Vocale</button>
+            </div>
+
+            <!-- Form di Invio Messaggi -->
+            <form v-if="activeThread && !activeThread.isBlocked && !isRecordingAudio" @submit.prevent="sendMessage" class="flex w-full shrink-0 gap-2 sm:gap-3 items-center">
+                <label :class="['p-3 bg-gray-100 text-gray-600 rounded-lg transition-colors shrink-0', isAnonWaitingForReply ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-200']" title="Allega Media">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                    <input type="file" @change="sendMediaMessage" :disabled="isAnonWaitingForReply" class="hidden" accept="image/*,video/*,audio/*">
+                </label>
+
+                <button type="button" @click="startAudioRecording" :disabled="isAnonWaitingForReply" :class="['p-3 bg-gray-100 text-gray-600 rounded-lg transition-colors shrink-0', isAnonWaitingForReply ? 'opacity-40 cursor-not-allowed' : 'hover:bg-red-50 hover:text-red-600']" title="Registra Vocale">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                </button>
+
+                <input type="text" ref="messageInputRef" v-model="newMessage" :disabled="isAnonWaitingForReply" autocomplete="off" :placeholder="isAnonWaitingForReply ? 'In attesa di risposta dal destinatario...' : 'Scrivi una risposta anonima...'" class="flex-grow min-w-0 p-3 rounded-lg bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50">
+                <button type="submit" :disabled="isAnonWaitingForReply" :class="['shrink-0 px-4 sm:px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md transition-colors', isAnonWaitingForReply ? 'opacity-40 cursor-not-allowed' : 'hover:bg-purple-700']">Invia</button>
+            </form>
+        </div>
+
+        <!-- MODALI CONDIVISI (CHAT-ENGINE) -->
+        <message-info-modal 
+            :show="showMsgInfoModal" 
+            :selected-msg-info="selectedMsgInfo"
+            accent-color="purple" 
+            @close="closeMsgInfoModal">
+        </message-info-modal>
+
+        <ephemeral-modal
+            :show="showCustomEphemeralModal"
+            v-model:custom-ephemeral-value="customEphemeralValue"
+            v-model:custom-ephemeral-unit="customEphemeralUnit"
+            accent-color="purple"
+            @close="closeCustomEphemeralModal"
+            @confirm="confirmCustomEphemeral">
+        </ephemeral-modal>
+
+        <!-- MODALE CREA NUOVO MESSAGGIO ANONIMO -->
+        <div v-if="showNewAnonModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-2xl shadow-2xl w-96 flex flex-col">
+                <div class="flex justify-between items-center border-b pb-3 mb-4">
+                    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                        Nuovo Messaggio Anonimo
+                    </h3>
+                    <button @click="closeNewAnonModal" class="text-gray-400 hover:text-gray-600 text-lg font-bold">×</button>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Destinatario:</label>
+                    <div class="relative">
+                        <input type="text" v-model="targetUserSearch" @input="searchRecipient" placeholder="Cerca username Spottio..." class="w-full p-2.5 pl-9 rounded-xl bg-gray-50 border border-gray-300 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        </div>
+                    </div>
+                    
+                    <div v-if="targetSearchResults.length > 0" class="border rounded-xl mt-1 max-h-36 overflow-y-auto bg-white shadow-lg">
+                        <div v-for="user in targetSearchResults" :key="user.id" @click="selectRecipient(user)" class="p-2.5 hover:bg-purple-50 cursor-pointer text-xs font-medium border-b last:border-0 flex items-center gap-2.5 transition-colors">
+                            <div v-html="getAvatar(user.avatarUrl, user.username, 'w-8 h-8 shrink-0', false)"></div>
+                            <div class="flex items-center gap-1 font-semibold text-gray-800">
+                                <span>{{ user.username }}</span>
+                                <span v-if="user.isVerified" v-html="verifiedIcon('w-3.5 h-3.5 text-blue-500 inline-block shrink-0')"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="selectedTargetUser" class="p-2.5 bg-purple-50 border border-purple-200 rounded-xl mb-3 flex justify-between items-center">
+                    <div class="flex items-center gap-2.5">
+                        <div v-html="getAvatar(selectedTargetUser.avatarUrl, selectedTargetUser.username, 'w-9 h-9 shrink-0', false)"></div>
+                        <div class="flex flex-col">
+                            <div class="flex items-center gap-1 text-xs font-bold text-gray-800">
+                                <span>{{ selectedTargetUser.username }}</span>
+                                <span v-if="selectedTargetUser.isVerified" v-html="verifiedIcon('w-3.5 h-3.5 text-blue-500 inline-block shrink-0')"></span>
+                            </div>
+                            <span class="text-[10px] text-purple-700 font-medium">Riceverà il messaggio in anonimo</span>
+                        </div>
+                    </div>
+                    <button @click="selectedTargetUser = null" class="text-gray-400 hover:text-red-500 text-lg font-bold px-2">×</button>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Messaggio iniziale:</label>
+                    <textarea v-model="initialMessageText" rows="3" placeholder="Scrivi quello che pensi in totale sicurezza..." class="w-full p-2.5 rounded-xl bg-gray-50 border border-gray-300 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <button @click="closeNewAnonModal" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl">Annulla</button>
+                    <button @click="confirmSendNewAnon" :disabled="isSending" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow transition-colors">
+                        {{ isSending ? 'Invio in corso...' : 'Invia Anonimo' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Base -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="../chat/spottio-crypto.js"></script>
+    <script src="../core/load-firebase.js"></script>
+    <script src="../core/load-shared-scripts.js"></script>
+    <script src="../posta/posta-media.js"></script>
+
+    <!-- Motore Messaggistica Dedicato (Condiviso) -->
+    <script src="../chat-engine/load-chat-engine.js"></script>
+
+    <!-- Moduli e App Anonima -->
+    <script src="../chat/core/chat-helpers.js"></script>
+    <script src="../chat/theme/use-chat-theme.js"></script>
+    <script src="anonimo-main.js"></script>
+    <script src="../core/load-nav-scripts.js"></script>
+</body>
+</html>
