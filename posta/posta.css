@@ -1,0 +1,15 @@
+.custom-file-upload {
+    border: 2px dashed #d1d5db;
+    border-radius: 0.5rem;
+    background-color: #f9fafb;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.custom-file-upload:hover {
+    background-color: #f3f4f6;
+    border-color: #93c5fd;
+}
+
+/* Rimosse classi .loader e regole @keyframes spin manuali: 
+   Ora il progetto usa ovunque l'utility 'animate-spin' nativa di TailwindCSS. */

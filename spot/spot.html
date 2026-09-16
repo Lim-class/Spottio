@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="spotTitle">Spot - Spottio</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="spot.css">
+    <link rel="stylesheet" href="../impostazioni/body.css">
+    
+</head>
+<body class="flex min-h-screen bg-gray-50">
+
+    <!-- APP VUE PRINCIPALE -->
+    <div id="vue-feed-app" v-cloak class="flex-grow p-4 md:p-8 flex justify-center overflow-y-auto w-full relative">
+        <div class="w-full max-w-2xl">
+
+            <!-- TABS DI NAVIGAZIONE FEED -->
+            <div class="flex justify-center mb-6 border-b border-gray-200">
+                <button 
+                    @click="switchTab('explore')" 
+                    :class="currentFeedMode === 'explore' ? 'px-6 py-3 font-bold text-blue-600 border-b-2 border-blue-600 transition' : 'px-6 py-3 font-bold text-gray-400 border-b-2 border-transparent hover:text-gray-600 transition'">
+                    {{ translateText('tabExplore', 'Esplora') }}
+                </button>
+                <button 
+                    @click="switchTab('following')" 
+                    :class="currentFeedMode === 'following' ? 'px-6 py-3 font-bold text-blue-600 border-b-2 border-blue-600 transition' : 'px-6 py-3 font-bold text-gray-400 border-b-2 border-transparent hover:text-gray-600 transition'">
+                    {{ translateText('tabFollowing', 'Seguiti') }}
+                </button>
+            </div>
+
+            <!-- BARRA FLASHSPOT -->
+            <div v-if="activeStories.length > 0" class="w-full flex gap-4 overflow-x-auto custom-scrollbar pb-4 mb-6 snap-x">
+                <div 
+                    v-for="(userObj, index) in activeStories" 
+                    :key="userObj.uid" 
+                    @click="openFlashspotViewer(index)" 
+                    class="flex flex-col items-center gap-1 cursor-pointer snap-start shrink-0 hover:opacity-80 transition">
+                    <div class="rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[3px] shadow-sm">
+                        <div v-html="getUserAvatarHtml(userObj.profile?.userPfUri, userObj.profile?.username, 'w-16 h-16 rounded-full object-cover border-[3px] border-white')"></div>
+                    </div>
+                    <span class="text-[11px] text-gray-700 font-medium truncate w-16 text-center">
+                        {{ userObj.uid === session.uid ? translateText('yourFlashspot', 'Il tuo Flashspot') : userObj.profile?.username }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- FEED POSTS -->
+            <div class="w-full space-y-6">
+                <div v-if="emptyMessage" class="text-center text-gray-500 mt-10 p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    {{ emptyMessage }}
+                </div>
+
+                <spot-card 
+                    v-for="post in posts" 
+                    :key="post.id"
+                    :post="post"
+                    :session="session"
+                    :shared-post-id="sharedPostId"
+                    :t="translateText"
+                    :format-time="formatTime"
+                    :get-user-avatar-html="getUserAvatarHtml"
+                    :get-verified-badge="getVerifiedBadge"
+                    @toggle-like="toggleLike"
+                    @open-likes="openLikesModal"
+                    @share-post="sharePost"
+                    @edit-post="openEditModal"
+                    @delete-post="confirmDelete"
+                    @report-post="openReportModal"
+                    @add-comment="addComment"
+                    @save-comment-edit="saveCommentEdit"
+                    @scroll-carousel="scrollCarousel"
+                    @open-media="openMedia"
+                    @open-author-story="openAuthorFlashspot"
+                ></spot-card>
+            </div>
+
+            <!-- Sentinella Scroll Infinito -->
+            <div ref="sentinelRef" class="h-12 w-full flex justify-center items-center my-4">
+                <div v-if="isLoading" class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+        </div>
+
+        <!-- MODALE SEGNALAZIONE -->
+        <spot-report-modal
+            :modal="modals.report"
+            :t="translateText"
+            @close="modals.report.show = false"
+            @submit="submitReport"
+        ></spot-report-modal>
+
+        <!-- MODALE LIKES -->
+        <spot-likes-modal
+            :modal="modals.likes"
+            :t="translateText"
+            :get-user-avatar-html="getUserAvatarHtml"
+            @close="modals.likes.show = false"
+        ></spot-likes-modal>
+
+        <!-- COMPONENTE GLOBALE MODIFICA SPOT -->
+        <spot-edit-modal
+            :modal="editManager.editModal"
+            :categories-list="editManager.categoriesList"
+            @close="editManager.editModal.show = false"
+            @save="editManager.saveEdit"
+            @toggle-category="editManager.toggleCategory"
+            @remove-media="editManager.removeMedia"
+            @files-selected="editManager.onFilesSelected"
+        ></spot-edit-modal>
+
+        <!-- FLASHSPOT VIEWER -->
+        <flashspot-viewer 
+            :modals="modals"
+            :current-story-time="currentStoryTime"
+            :current-story-media="currentStoryMedia"
+            :current-story-text="currentStoryText"
+            :can-delete-current-story="canDeleteCurrentStory"
+            :get-user-avatar-html="getUserAvatarHtml"
+            @close="closeFlashspotViewer"
+            @prev="prevFlashspot"
+            @next="nextFlashspot"
+            @delete="deleteCurrentFlashspot"
+            @start-timer="startFlashspotTimer"
+        ></flashspot-viewer>
+
+    </div>
+
+    <script src="../core/load-firebase.js"></script>
+    <script src="../core/load-shared-scripts.js"></script>
+    <script src="feedAlgorithm.js"></script>
+    
+    <!-- Script Feed con type="module" -->
+    <script type="module" src="feed.js"></script>
+    <script src="../core/load-nav-scripts.js"></script>
+</body>
+</html>
