@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="profileTitle">Profilo - Spottio</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../impostazioni/body.css">
+    
+</head>
+<body class="flex min-h-screen bg-gray-50">
+
+    <div id="vue-user-app" v-cloak class="flex-grow p-4 md:p-8 flex flex-col items-center pt-10 overflow-y-auto w-full relative">
+        
+        <div class="bg-white p-6 rounded-3xl shadow-sm w-full max-w-md mb-10">
+            <div class="flex items-center gap-4 mb-8">
+                <div :class="avatarClasses.wrapper" @click="handleAvatarClick">
+                    <div v-html="getUserAvatarHtml(userAvatarUrl, userData.username, avatarClasses.img)"></div>
+                </div>
+                
+                <div class="text-left flex-grow min-w-0">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <h2 class="text-2xl font-bold text-gray-800 truncate flex items-center">
+                                {{ userData.username || translateText('loadingPosts', 'Caricamento...') }}
+                                <span v-if="userData.isVerified" v-html="verifiedBadgeIcon"></span>
+                            </h2>
+                        </div>
+                        
+                        <button 
+                            v-if="showFollowBtn" 
+                            @click="toggleFollow" 
+                            :disabled="isFollowLoading"
+                            :class="followBtnClass">
+                            {{ followBtnText }}
+                        </button>
+                    </div>
+                    
+                    <div class="flex items-center gap-2 mt-1">
+                        <p class="text-gray-500 text-sm break-words">{{ userData.bio || translateText('noBio', 'Nessuna bio impostata') }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contatori Statistiche -->
+            <profile-stats-bar
+                :posts-count="postsCount"
+                :followers-count="userData.followers?.length || 0"
+                :following-count="userData.following?.length || 0"
+                :liked-count="likedPostsCount"
+                :is-private-locked="isPrivateLocked"
+                :t="translateText"
+                @open-followers="openUsersModal('followers')"
+                @open-following="openUsersModal('following')"
+                @open-liked="openLikedModal()"
+            ></profile-stats-bar>
+
+            <!-- Cartelle Flashspot in Evidenza -->
+            <highlight-folders-bar
+                v-if="!isPrivateLocked"
+                :folder-keys="highlightFolderKeys"
+                :get-cover="getFolderCover"
+                :t="translateText"
+                @open-folder="onOpenHighlightFolder"
+            ></highlight-folders-bar>
+        </div>
+
+        <div class="w-full max-w-4xl mx-auto p-4 flex flex-col items-center sm:items-start">
+            <div v-if="isPrivateLocked" class="col-span-full w-full text-center p-8 bg-white rounded-3xl shadow-sm border border-gray-100">
+                <svg class="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                <p class="text-gray-800 font-bold text-base">{{ translateText('privateAccountNotice', 'Questo account è privato') }}</p>
+                <p class="text-xs text-gray-500 mt-1">{{ translateText('privateAccountSub', 'Segui questo profilo per vedere gli Spot e le attività pubblicate.') }}</p>
+            </div>
+
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                <div v-if="postsLoading" class="col-span-full text-center text-gray-500 italic py-8 animate-pulse">{{ translateText('loadingPosts', 'Caricamento post in corso...') }}</div>
+                <div v-else-if="posts.length === 0" class="col-span-full text-center text-gray-500 italic py-8">{{ translateText('noPostsPublished', 'Nessun post pubblicato.') }}</div>
+
+                <spot-card 
+                    v-for="post in posts" 
+                    :key="post.id"
+                    :post="post"
+                    :session="session"
+                    :t="translateText"
+                    :format-time="formatTime"
+                    :get-user-avatar-html="getUserAvatarHtml"
+                    :get-verified-badge="() => verifiedBadgeIconSmall"
+                    @toggle-like="toggleLike"
+                    @open-likes="openLikesModal"
+                    @share-post="sharePost"
+                    @edit-post="openEditModal"
+                    @delete-post="confirmDelete"
+                    @report-post="openReportModal"
+                    @add-comment="addComment"
+                    @save-comment-edit="saveCommentEdit"
+                    @scroll-carousel="scrollCarousel"
+                    @open-media="openMedia"
+                    @open-author-story="openAuthorFlashspot"
+                ></spot-card>
+            </div>
+        </div>
+
+        <!-- Modale Follower/Following Riutilizzabile -->
+        <user-list-modal
+            :show="showUsersModal"
+            :title="modalTitle"
+            :users="modalUsersList"
+            :loading="loadingUsersModal"
+            :is-self="false"
+            :t="translateText"
+            :get-user-avatar-html="getUserAvatarHtml"
+            @close="showUsersModal = false"
+            @go-user="goToUserProfile"
+        ></user-list-modal>
+
+        <!-- Modale Spot Piaciuti -->
+        <liked-spots-modal
+            :modal="likedModal"
+            :is-self="false"
+            :title="translateText('likedSpotsTitle', 'Spot piaciuti')"
+            @close="likedModal.show = false"
+            @go-user="goToUserProfile"
+        ></liked-spots-modal>
+
+        <!-- Modale Likes del Post -->
+        <spot-likes-modal
+            :modal="modals.likes"
+            :t="translateText"
+            :get-user-avatar-html="getUserAvatarHtml"
+            @close="modals.likes.show = false"
+        ></spot-likes-modal>
+
+        <!-- Modale Segnalazione -->
+        <spot-report-modal
+            :modal="modals.report"
+            :t="translateText"
+            @close="modals.report.show = false"
+            @submit="submitReport"
+        ></spot-report-modal>
+
+        <spot-edit-modal
+            :modal="editManager.editModal"
+            :categories-list="editManager.categoriesList"
+            @close="editManager.editModal.show = false"
+            @save="editManager.saveEdit"
+            @toggle-category="editManager.toggleCategory"
+            @remove-media="editManager.removeMedia"
+            @files-selected="editManager.onFilesSelected"
+        ></spot-edit-modal>
+
+        <flashspot-viewer 
+            :modals="modals"
+            :current-story-time="currentStoryTime"
+            :current-story-media="currentStoryMedia"
+            :current-story-text="currentStoryText"
+            :can-delete-current-story="canDeleteCurrentStory"
+            :get-user-avatar-html="getUserAvatarHtml"
+            @close="closeFlashspotViewer"
+            @prev="prevFlashspot"
+            @next="nextFlashspot"
+            @delete="deleteCurrentFlashspot"
+            @start-timer="startFlashspotTimer"
+        ></flashspot-viewer>
+
+    </div>
+
+    <!-- Script Base -->
+    <script src="../core/load-firebase.js"></script>
+    <script src="../core/load-shared-scripts.js"></script>
+    
+    <!-- Script Utente come modulo ES -->
+    <script type="module" src="utente.js"></script>
+
+    <!-- Navigazione Globale (Inietta automaticamente la sidebar) -->
+    <script src="../core/load-nav-scripts.js"></script>
+</body>
+</html>

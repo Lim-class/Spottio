@@ -1,0 +1,20 @@
+export default {
+    followBtn: 'Follow',
+    followingBtn: 'Following',
+    pendingBtn: 'Requested',
+    privateAccountNotice: 'This account is private',
+    privateAccountSub: 'Follow this profile to see their spots and activity.',
+    noPostsPublished: 'No posts published.',
+    reportSpotTitle: 'Report Spot',
+    reportReason: 'Reason',
+    reportReasonSelect: 'Select a category...',
+    reportCopyright: 'Copyright violation',
+    reportGdpr: 'Privacy / Personal Data violation (GDPR)',
+    reportHarassment: 'Harassment, threats, or hate',
+    reportSpam: 'Spam or fraud',
+    reportOther: 'Other',
+    reportDetails: 'Details',
+    reportDetailsPlaceholder: 'Provide additional information...',
+    sendBtn: 'Submit',
+    loginToFollow: 'Please log in to follow this user.'
+};

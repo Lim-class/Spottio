@@ -1,0 +1,157 @@
+/* spotini.css - Stili dedicati per gli Spotini (Shorts / Reels) */
+
+/* Contenitore principale verticale con snap scroll nativo */
+.spotini-container {
+    scroll-snap-type: y mandatory;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100vh;
+    height: 100dvh;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.spotini-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* Card a schermo esatto */
+.spotino-card {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    height: 100vh;
+    height: 100dvh;
+    width: 100%;
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
+    overflow: hidden;
+}
+
+/* Elemento Video / Media adattato esattamente al viewport senza sbordare */
+.spotino-media-wrapper {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
+}
+
+.spotino-video,
+.spotino-image {
+    width: 100%;
+    height: 100%;
+    max-height: 100vh;
+    max-height: 100dvh;
+    object-fit: cover;
+    pointer-events: none;
+}
+
+/* Gradienti per leggibilità testi ed icone */
+.gradient-overlay-bottom {
+    background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 40%, rgba(0,0,0,0) 100%);
+}
+.gradient-overlay-top {
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%);
+}
+
+/* Animazione Like doppio tocco */
+@keyframes popHeart {
+    0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+    50% { transform: scale(1.3) rotate(0deg); opacity: 0.95; }
+    100% { transform: scale(1) rotate(10deg); opacity: 0; }
+}
+.animate-double-tap-heart {
+    animation: popHeart 0.8s ease-out forwards;
+}
+
+/* Scrubber / Barra interattiva di avanzamento video (stile TikTok / Reels / Shorts) */
+.scrubber-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 16px;
+    z-index: 40;
+    display: flex;
+    align-items: flex-end;
+    cursor: pointer;
+    touch-action: none;
+    padding-bottom: 2px;
+}
+
+.scrubber-track {
+    width: 100%;
+    height: 3px;
+    background-color: rgba(255, 255, 255, 0.25);
+    position: relative;
+    transition: height 0.15s ease;
+}
+
+.scrubber-container:hover .scrubber-track,
+.scrubber-container.is-scrubbing .scrubber-track {
+    height: 6px;
+}
+
+.scrubber-progress {
+    height: 100%;
+    background-color: #ffffff;
+    width: 0%;
+    position: relative;
+    pointer-events: none;
+}
+
+.scrubber-thumb {
+    position: absolute;
+    right: -5px;
+    top: 50%;
+    transform: translateY(-50%) scale(0);
+    width: 12px;
+    height: 12px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 0 6px rgba(0,0,0,0.6);
+    transition: transform 0.15s ease;
+}
+
+.scrubber-container:hover .scrubber-thumb,
+.scrubber-container.is-scrubbing .scrubber-thumb {
+    transform: translateY(-50%) scale(1);
+}
+
+/* Feedback visivo doppio tocco seek (avanti/indietro 5s) */
+.seek-feedback {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 35%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 35;
+    animation: seekFade 0.6s ease-out forwards;
+}
+.seek-feedback.left {
+    left: 0;
+}
+.seek-feedback.right {
+    right: 0;
+}
+
+@keyframes seekFade {
+    0% { opacity: 0; transform: scale(0.85); }
+    40% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.1); }
+}

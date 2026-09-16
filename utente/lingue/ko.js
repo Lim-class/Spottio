@@ -1,0 +1,20 @@
+export default {
+    followBtn: '팔로우',
+    followingBtn: '팔로잉',
+    pendingBtn: '요청됨',
+    privateAccountNotice: '비공개 계정입니다',
+    privateAccountSub: '게시물과 활동을 보려면 이 프로필을 팔로우하세요.',
+    noPostsPublished: '게시된 게시물이 없습니다.',
+    reportSpotTitle: '스팟 신고',
+    reportReason: '신고 사유',
+    reportReasonSelect: '카테고리 선택...',
+    reportCopyright: '저작권 침해',
+    reportGdpr: '개인정보 침해 (GDPR)',
+    reportHarassment: '괴롭힘, 협박 또는 혐오 발언',
+    reportSpam: '스팸 또는 사기',
+    reportOther: '기타',
+    reportDetails: '상세 내용',
+    reportDetailsPlaceholder: '추가 정보를 입력하세요...',
+    sendBtn: '제출',
+    loginToFollow: '사용자를 팔로우하려면 로그인하세요.'
+};
