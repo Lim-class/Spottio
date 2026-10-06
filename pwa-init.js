@@ -1,10 +1,15 @@
 // pwa-init.js - Configurazione globale PWA e Service Worker
 (function() {
+    // Calcola il percorso base della cartella radice del progetto
+    const scripts = Array.from(document.querySelectorAll('script'));
+    const currentScript = document.currentScript || scripts.find(s => s.src && s.src.includes('pwa-init.js'));
+    const basePath = currentScript ? new URL('.', currentScript.src).href : new URL('.', window.location.href).href;
+
     // 1. Inietta Manifest e Meta Tag PWA se non presenti
     if (!document.querySelector('link[rel="manifest"]')) {
         const manifestLink = document.createElement('link');
         manifestLink.rel = 'manifest';
-        manifestLink.href = '/manifest.json';
+        manifestLink.href = new URL('manifest.json', basePath).href;
         document.head.appendChild(manifestLink);
 
         const themeColor = document.createElement('meta');
@@ -28,20 +33,18 @@
         document.head.appendChild(appleTouchIcon);
     }
 
+    // 2. Registrazione Service Worker con URL assoluto calcolato sulla root
     if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        // Calcola il percorso base determinando dove si trova pwa-init.js o la root del progetto
-        const currentScript = document.currentScript || Array.from(document.querySelectorAll('script')).find(s => s.src && s.src.includes('pwa-init.js'));
-        const basePath = currentScript ? new URL('.', currentScript.src).href : '/';
-        const swUrl = new URL('sw.js', basePath).href;
+        window.addEventListener('load', () => {
+            const swUrl = new URL('sw.js', basePath).href;
 
-        navigator.serviceWorker.register(swUrl)
-            .then(reg => {
-                console.log('Service Worker registrato con successo:', reg.scope);
-            })
-            .catch(err => {
-                console.warn('Registrazione Service Worker fallita:', err);
-            });
-    });
-}
+            navigator.serviceWorker.register(swUrl)
+                .then(reg => {
+                    console.log('Service Worker registrato con successo:', reg.scope);
+                })
+                .catch(err => {
+                    console.warn('Registrazione Service Worker fallita:', err);
+                });
+        });
+    }
 })();
