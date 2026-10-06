@@ -1,0 +1,86 @@
+/* =========================================================================
+   VUE CLOAK (Previene il flash di codice/template prima dell'idratazione)
+   ========================================================================= */
+[v-cloak] {
+    display: none !important;
+}
+
+/* =========================================================================
+   SPOTTIO GLOBAL THEME & DARK MODE STYLES
+   ========================================================================= */
+
+html.dark {
+    color-scheme: dark;
+}
+
+html.dark body.dark-theme-active {
+    background-color: #0b0f19;
+    color: #e2e8f0;
+}
+
+/* Sfondi contenitori, card, sidebar desktop e modali */
+html.dark .bg-white,
+html.dark #sidebar-container,
+html.dark #chat-list-container,
+html.dark #chat-content-container,
+html.dark .macro-category,
+html.dark .modal-content {
+    background-color: #151d30 !important;
+    color: #f1f5f9 !important;
+    border-color: #1e293b !important;
+}
+
+/* Aree secondarie, pillole e sfondi neutri */
+html.dark .bg-gray-50,
+html.dark .bg-gray-100 {
+    background-color: #1e293b !important;
+    color: #cbd5e1 !important;
+    border-color: #334155 !important;
+}
+
+/* Campi Input, Textarea e Select */
+html.dark input, 
+html.dark textarea, 
+html.dark select {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #64748b !important;
+}
+
+/* Tipografia */
+html.dark .text-gray-900,
+html.dark .text-gray-800,
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4 {
+    color: #f8fafc !important;
+}
+
+html.dark .text-gray-700,
+html.dark .text-gray-600 {
+    color: #cbd5e1 !important;
+}
+
+html.dark .text-gray-500,
+html.dark .text-gray-400 {
+    color: #94a3b8 !important;
+}
+
+/* Bordi e divisori */
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-gray-300 {
+    border-color: #1e293b !important;
+}
+
+/* Hover e stati interattivi */
+html.dark .hover\:bg-gray-50:hover,
+html.dark .hover\:bg-gray-100:hover {
+    background-color: #243049 !important;
+}
