@@ -1,0 +1,198 @@
+/* spotini.css - Stili dedicati per gli Spotini (Shorts / Reels) */
+
+/* 1. Azzeramento forzato e totale di scrollbar e binari su qualsiasi browser */
+html, body, #vue-spotini-app, .spotini-container, .spotino-card, .spotino-media-wrapper {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#vue-spotini-app::-webkit-scrollbar,
+.spotini-container::-webkit-scrollbar,
+.spotino-card::-webkit-scrollbar,
+*::-webkit-scrollbar {
+    display: none !important;
+    width: 0px !important;
+    height: 0px !important;
+    background: transparent !important;
+    -webkit-appearance: none !important;
+}
+
+/* 2. Contenitore principale verticale con snap scroll nativo */
+.spotini-container {
+    scroll-snap-type: y mandatory;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: 100vh;
+    height: 100dvh;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    border: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background-color: #000000 !important;
+}
+
+/* 3. Card singola */
+.spotino-card {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    height: 100vh;
+    height: 100dvh;
+    width: 100%;
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000000 !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* 4. Elemento Video / Media */
+.spotino-media-wrapper {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000000 !important;
+    border: 0 !important;
+    outline: none !important;
+}
+
+.spotino-video,
+.spotino-image {
+    width: 100%;
+    height: 100%;
+    max-height: 100vh;
+    max-height: 100dvh;
+    object-fit: cover;
+    pointer-events: none;
+    border: 0 !important;
+    outline: none !important;
+    background-color: #000000 !important;
+}
+
+/* 5. Colonna laterale bottoni: nessun bordo o ombra sovrapposta */
+.spotini-actions-column {
+    border: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    pointer-events: auto !important;
+}
+
+.spotini-actions-column * {
+    border: 0 !important;
+    outline: none !important;
+}
+
+/* Gradienti per leggibilità */
+.gradient-overlay-bottom {
+    background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.5) 40%, rgba(0,0,0,0) 100%);
+    border: 0 !important;
+}
+
+.gradient-overlay-top {
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%);
+    border: 0 !important;
+}
+
+/* Animazione Like */
+@keyframes popHeart {
+    0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+    50% { transform: scale(1.3) rotate(0deg); opacity: 0.95; }
+    100% { transform: scale(1) rotate(10deg); opacity: 0; }
+}
+
+.animate-double-tap-heart {
+    animation: popHeart 0.8s ease-out forwards;
+}
+
+/* Scrubber / Avanzamento video */
+.scrubber-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 16px;
+    z-index: 40;
+    display: flex;
+    align-items: flex-end;
+    cursor: pointer;
+    touch-action: none;
+    padding-bottom: 2px;
+}
+
+.scrubber-track {
+    width: 100%;
+    height: 3px;
+    background-color: rgba(255, 255, 255, 0.25);
+    position: relative;
+    transition: height 0.15s ease;
+}
+
+.scrubber-container:hover .scrubber-track,
+.scrubber-container.is-scrubbing .scrubber-track {
+    height: 6px;
+}
+
+.scrubber-progress {
+    height: 100%;
+    background-color: #ffffff;
+    width: 0%;
+    position: relative;
+    pointer-events: none;
+}
+
+.scrubber-thumb {
+    position: absolute;
+    right: -5px;
+    top: 50%;
+    transform: translateY(-50%) scale(0);
+    width: 12px;
+    height: 12px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 0 6px rgba(0,0,0,0.6);
+    transition: transform 0.15s ease;
+}
+
+.scrubber-container:hover .scrubber-thumb,
+.scrubber-container.is-scrubbing .scrubber-thumb {
+    transform: translateY(-50%) scale(1);
+}
+
+/* Seek feedback doppio tocco */
+.seek-feedback {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 35%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 35;
+    animation: seekFade 0.6s ease-out forwards;
+}
+
+.seek-feedback.left { left: 0; }
+.seek-feedback.right { right: 0; }
+
+@keyframes seekFade {
+    0% { opacity: 0; transform: scale(0.85); }
+    40% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.1); }
+}

@@ -1,0 +1,20 @@
+export default {
+    followBtn: 'Suivre',
+    followingBtn: 'Abonné',
+    pendingBtn: 'En attente',
+    privateAccountNotice: 'Ce compte est privé',
+    privateAccountSub: 'Suivez ce profil pour voir les Spots et l\'activité.',
+    noPostsPublished: 'Aucun post publié.',
+    reportSpotTitle: 'Signaler le Spot',
+    reportReason: 'Motif',
+    reportReasonSelect: 'Sélectionnez une catégorie...',
+    reportCopyright: 'Atteinte aux droits d\'auteur',
+    reportGdpr: 'Violation de confidentialité / Données personnelles (RGPD)',
+    reportHarassment: 'Harcèlement, menaces ou haine',
+    reportSpam: 'Spam ou escroquerie',
+    reportOther: 'Autre',
+    reportDetails: 'Détails',
+    reportDetailsPlaceholder: 'Fournissez plus d\'informations...',
+    sendBtn: 'Envoyer',
+    loginToFollow: 'Connectez-vous pour suivre cet utilisateur.'
+};

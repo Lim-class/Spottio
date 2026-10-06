@@ -1,0 +1,20 @@
+export default {
+    followBtn: 'Obserwuj',
+    followingBtn: 'Obserwujesz',
+    pendingBtn: 'Oczekujące',
+    privateAccountNotice: 'To konto jest prywatne',
+    privateAccountSub: 'Zaobserwuj ten profil, aby zobaczyć spoty i aktywność.',
+    noPostsPublished: 'Brak opublikowanych postów.',
+    reportSpotTitle: 'Zgłoś spot',
+    reportReason: 'Powód',
+    reportReasonSelect: 'Wybierz kategorię...',
+    reportCopyright: 'Naruszenie praw autorskich',
+    reportGdpr: 'Naruszenie prywatności / Danych osobowych (RODO)',
+    reportHarassment: 'Nękanie, groźby lub mowa nienawiści',
+    reportSpam: 'Spam lub oszustwo',
+    reportOther: 'Inne',
+    reportDetails: 'Szczegóły',
+    reportDetailsPlaceholder: 'Podaj dodatkowe informacje...',
+    sendBtn: 'Wyślij',
+    loginToFollow: 'Zaloguj się, aby móc obserwować użytkownika.'
+};

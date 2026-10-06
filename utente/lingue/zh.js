@@ -1,0 +1,20 @@
+export default {
+    followBtn: '关注',
+    followingBtn: '已关注',
+    pendingBtn: '等待通过',
+    privateAccountNotice: '此账号为私密账号',
+    privateAccountSub: '关注该用户以查看发布的 Spot 和动态。',
+    noPostsPublished: '暂无已发布的帖子。',
+    reportSpotTitle: '举报 Spot',
+    reportReason: '举报原因',
+    reportReasonSelect: '请选择分类...',
+    reportCopyright: '侵犯版权 / 知识产权',
+    reportGdpr: '侵犯隐私 / 个人信息安全 (GDPR)',
+    reportHarassment: '骚扰、威胁或仇恨言论',
+    reportSpam: '垃圾广告或欺诈',
+    reportOther: '其他原因',
+    reportDetails: '补充说明',
+    reportDetailsPlaceholder: '请提供更多详细信息...',
+    sendBtn: '提交举报',
+    loginToFollow: '请先登录以关注该用户。'
+};
