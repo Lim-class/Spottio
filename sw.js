@@ -1,22 +1,29 @@
 // sw.js - Service Worker completo per Spottio PWA
-const CACHE_NAME = 'spottio-v2';
+const CACHE_NAME = 'spottio-v3';
 
-// 1. Risorse statiche essenziali dell'applicazione (App Shell)
+// 1. Risorse statiche essenziali con percorsi relativi (compatibili con GitHub Pages e localhost)
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/spot/spot.html',
-  '/spot/spot.css',
-  '/impostazioni/body.css',
-  '/pwa-init.js',
-  '/manifest.json'
+  './',
+  './index.html',
+  './spot/spot.html',
+  './spot/spot.css',
+  './impostazioni/body.css',
+  './pwa-init.js',
+  './manifest.json'
 ];
 
-// 2. Installazione: memorizza nella cache i file statici di base
+// 2. Installazione: memorizza nella cache i file statici di base in modo sicuro
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+    caches.open(CACHE_NAME).then(async (cache) => {
+      // Salva ogni risorsa singolarmente per evitare che un singolo 404 rompa tutta l'installazione
+      for (const asset of STATIC_ASSETS) {
+        try {
+          await cache.add(asset);
+        } catch (err) {
+          console.warn(`[ServiceWorker] Impossibile mettere in cache: ${asset}`, err);
+        }
+      }
     })
   );
   self.skipWaiting();
@@ -42,8 +49,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
 
-  // Esclusioni critiche: solo richieste HTTP GET locali
-  // Ignora Firebase Firestore, Auth, Cloudinary e CDN terze per evitare blocchi CORS o dati non aggiornati
+  // Esclusioni critiche: solo richieste HTTP GET
+  // Ignora Firebase Firestore, Auth, Cloudinary e CDN esterne
   if (
     event.request.method !== 'GET' ||
     !url.startsWith('http') ||
@@ -57,11 +64,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategia Network-First con fallback protetto su cache e Response fittizia
+  // Strategia Network-First con fallback su cache
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
-        // Se la rete risponde correttamente, aggiorna la cache in background
         if (networkResponse && networkResponse.status === 200) {
           const resClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
@@ -69,12 +75,10 @@ self.addEventListener('fetch', (event) => {
         return networkResponse;
       })
       .catch(async () => {
-        // Se la rete fallisce (es. utente offline o connessione instabile), cerca nella cache
         const cachedResponse = await caches.match(event.request);
         if (cachedResponse) {
           return cachedResponse;
         }
-        // Se la risorsa non esiste nemmeno in cache, restituisce una Response valida per non rompere il browser
         return new Response('', { 
           status: 503, 
           statusText: 'Service Unavailable (Offline)' 
