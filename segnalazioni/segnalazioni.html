@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Segnalazioni</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../impostazioni/body.css">
+    <style>
+        [v-cloak] { display: none !important; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="flex min-h-screen">
+
+    <!-- Navigazione a sinistra -->
+    <div id="sidebar-container" class="w-1/5 bg-white p-6 rounded-r-2xl shadow-xl flex flex-col justify-start items-start sticky top-0 h-screen overflow-y-auto custom-scrollbar transition-all duration-300 shrink-0">
+        <h2 id="menu-title" class="text-2xl font-bold text-gray-800 mb-6 w-full"></h2>
+        <div id="nav-container" class="w-full"></div>
+    </div>
+
+    <!-- Contenuto a destra Vue -->
+    <div id="vue-admin-app" v-cloak class="flex-grow p-8 flex justify-center min-w-0">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-3xl flex flex-col">
+            
+            <!-- Intestazione principale -->
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-gray-100 pb-4">
+                <h2 class="text-4xl font-bold text-gray-800">{{ t('pageTitle') }}</h2>
+                
+                <!-- Tab di selezione -->
+                <div class="flex gap-2">
+                    <button @click="currentTab = 'reports'" 
+                            :class="currentTab === 'reports' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'" 
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition">
+                        {{ t('tabReports') }} ({{ reports.length }})
+                    </button>
+                    <button @click="currentTab = 'appeals'" 
+                            :class="currentTab === 'appeals' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'" 
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition">
+                        {{ t('tabAppeals') }} ({{ appeals.length }})
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loader / Errore Auth -->
+            <div v-if="isLoadingAuth" class="flex justify-center items-center py-20">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-800"></div>
+            </div>
+
+            <div v-else-if="!isAdmin" class="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl text-center">
+                {{ t('unauthorized') }}
+            </div>
+
+            <!-- CONTENUTO AMMINISTRATIVO -->
+            <div v-else class="space-y-6">
+
+                <!-- 1. TAB SEGNALAZIONI -->
+                <div v-if="currentTab === 'reports'">
+                    <div class="mb-6 flex justify-between items-center">
+                        <p class="text-lg text-gray-600">
+                            {{ t('totalReports') }} <span class="font-bold text-gray-800">{{ reports.length }}</span>
+                        </p>
+                        <button v-if="reports.length > 0" 
+                                @click="deleteAllReports" 
+                                class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-200 text-sm shadow">
+                            {{ t('deleteAllReports') }}
+                        </button>
+                    </div>
+
+                    <div v-if="reports.length === 0" class="p-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-2xl text-gray-500">
+                        {{ t('noReports') }}
+                    </div>
+
+                    <div class="space-y-6">
+                        <div v-for="report in reports" :key="report.id" class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                            <!-- Header della segnalazione -->
+                            <div class="p-4 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-full text-xs border border-red-200">
+                                        {{ t('reasonLabel') }} {{ report.reason || t('reasonUnspecified') }}
+                                    </span>
+                                    <span class="text-xs text-gray-400 font-medium">
+                                        {{ formatTime(report.timestamp) }}
+                                    </span>
+                                </div>
+                                
+                                <div class="flex items-center gap-2">
+                                    <button @click="deleteReport(report.id)" 
+                                            class="text-xs font-bold text-gray-600 hover:text-gray-800 bg-white hover:bg-gray-100 border border-gray-300 px-3 py-1.5 rounded-xl transition">
+                                        {{ t('btnIgnoreReport') }}
+                                    </button>
+                                    <button v-if="report.postId" 
+                                            @click="deletePostAndReport(report.postId, report.id)" 
+                                            class="text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-xl transition shadow-sm">
+                                        {{ t('btnDeletePost') }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Contenuto Spot Segnalato -->
+                            <div class="p-4 bg-gray-100">
+                                <div v-if="report.isPostLoading" class="animate-pulse space-y-2 p-2">
+                                    <div class="h-3 bg-gray-300 rounded w-1/4"></div>
+                                    <div class="h-4 bg-gray-300 rounded w-3/4"></div>
+                                </div>
+                                <div v-else-if="!report.postData" class="text-xs text-gray-400 italic p-3 text-center bg-white rounded-xl">
+                                    {{ t('postRemoved') }}
+                                </div>
+                                <div v-else class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 w-full relative">
+                                    
+                                    <!-- Tasto Ban Utente -->
+                                    <div class="absolute top-6 right-6">
+                                        <button v-if="report.authorProfile?.username || report.postData.user" 
+                                                @click="openBanModal(report.authorProfile?.username || report.postData.user)" 
+                                                class="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-100 font-bold transition shadow-sm">
+                                            {{ t('btnBanAuthor') }}
+                                        </button>
+                                    </div>
+
+                                    <!-- Autore Spot -->
+                                    <div class="flex items-center justify-between mb-4 pr-24">
+                                        <div class="flex items-center">
+                                            <div v-html="getUserAvatarHtml(report.authorProfile?.userPfUri, report.authorProfile?.username, 'w-10 h-10')"></div>
+                                            <div class="ml-3">
+                                                <div class="flex items-center gap-1">
+                                                    <span class="font-semibold text-gray-800">{{ report.authorProfile?.username || report.postData.user || t('anonymousUser') }}</span>
+                                                    <span v-if="report.authorProfile?.isVerified" v-html="getVerifiedBadge()"></span>
+                                                    <div class="flex flex-wrap gap-1 ml-2">
+                                                        <span v-for="cat in report.postCategories" :key="cat" class="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200 shadow-sm">{{ cat }}</span>
+                                                    </div>
+                                                </div>
+                                                <p class="text-xs text-gray-400">{{ formatTime(report.postData.timestamp) }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Testo dello Spot -->
+                                    <p class="text-gray-700 mb-4 whitespace-pre-wrap leading-relaxed break-words">{{ report.postData.text }}</p>
+
+                                    <!-- Media (Singolo o Carosello) -->
+                                    <div v-if="report.postData.mediaList && report.postData.mediaList.length === 1" class="mb-4">
+                                        <video v-if="report.postData.mediaList[0].isVideo" :src="report.postData.mediaList[0].url" controls class="w-full h-auto rounded-xl bg-black max-h-96 object-contain"></video>
+                                        <img v-else :src="report.postData.mediaList[0].url" class="w-full h-auto rounded-xl shadow-sm max-h-96 object-contain bg-black cursor-pointer" @click="openMedia(report.postData.mediaList[0].url)">
+                                    </div>
+
+                                    <div v-else-if="report.postData.mediaList && report.postData.mediaList.length > 1" class="relative w-full mb-4 group rounded-2xl overflow-hidden shadow-sm bg-black border border-gray-100">
+                                        <div class="absolute top-3 right-3 bg-black/50 backdrop-blur-md text-white text-[11px] font-semibold px-2 py-1 rounded-md z-10">
+                                            {{ report.postData.mediaList.length }} {{ t('mediaCounter') }}
+                                        </div>
+                                        <div :id="'carousel-' + report.id" class="flex overflow-x-auto snap-x snap-mandatory scroll-smooth w-full no-scrollbar">
+                                            <div v-for="item in report.postData.mediaList" :key="item.url" class="w-full flex-shrink-0 snap-center h-[350px] bg-black flex items-center justify-center">
+                                                <video v-if="item.isVideo" :src="item.url" controls class="w-full h-full object-contain"></video>
+                                                <img v-else :src="item.url" class="w-full h-full object-contain cursor-pointer" @click="openMedia(item.url)">
+                                            </div>
+                                        </div>
+                                        <button @click="scrollCarousel(report.id, -1)" class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg z-10 opacity-0 group-hover:opacity-100 transition">❮</button>
+                                        <button @click="scrollCarousel(report.id, 1)" class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg z-10 opacity-0 group-hover:opacity-100 transition">❯</button>
+                                    </div>
+
+                                    <!-- Footer Spot -->
+                                    <div class="flex items-center space-x-6 border-t py-3 mt-4">
+                                        <div class="flex items-center space-x-1">
+                                            <button class="flex items-center p-1 rounded-full text-gray-500 cursor-default">
+                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                                            </button>
+                                            <span class="text-gray-500 font-semibold text-sm">{{ report.postData.likes?.length || 0 }}</span>
+                                        </div>
+                                        <button @click="report.showComments = !report.showComments" class="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition hover:scale-105">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                                            <span>{{ report.postData.comments?.length || 0 }}</span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Commenti Spot -->
+                                    <div v-show="report.showComments" class="border-t border-gray-100 pt-4 mt-2">
+                                        <div class="max-h-60 overflow-y-auto custom-scrollbar mb-3 pr-1 space-y-1">
+                                            <div v-if="!report.postData.comments || report.postData.comments.length === 0" class="text-center py-4 text-xs italic text-gray-400">
+                                                {{ t('noComments') }}
+                                            </div>
+                                            
+                                            <div v-for="(comment, cIdx) in report.postData.comments" :key="cIdx" class="bg-gray-50 p-2.5 rounded-xl mb-2 text-sm border border-gray-100 flex items-start space-x-2.5">
+                                                <div v-html="getUserAvatarHtml('', comment.user, 'w-6 h-6 text-[10px]')"></div>
+                                                <div class="flex-grow min-w-0">
+                                                    <div class="flex justify-between items-center mb-0.5">
+                                                        <span class="font-bold text-xs text-gray-800">{{ comment.user }}</span>
+                                                        <span class="text-[10px] text-gray-400 shrink-0 ml-2">{{ formatTime(comment.timestamp) }}</span>
+                                                    </div>
+                                                    <p class="text-gray-700 text-xs leading-relaxed whitespace-pre-wrap break-words">{{ comment.text }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. TAB RICORSI -->
+                <div v-if="currentTab === 'appeals'">
+                    <div class="mb-4">
+                        <p class="text-lg text-gray-600">
+                            {{ t('pendingAppeals') }} <span class="font-bold text-gray-800">{{ appeals.length }}</span>
+                        </p>
+                    </div>
+
+                    <div v-if="appeals.length === 0" class="p-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-2xl text-gray-500">
+                        {{ t('noAppeals') }}
+                    </div>
+
+                    <div class="space-y-4">
+                        <div v-for="appeal in appeals" :key="appeal.id" class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-gray-800 text-sm">{{ t('userUidLabel') }} <span class="font-mono text-gray-600">{{ appeal.uid }}</span></span>
+                                <span class="text-xs text-gray-400">{{ formatTime(appeal.createdAt) }}</span>
+                            </div>
+                            <p class="text-sm text-gray-700 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                {{ appeal.reason || appeal.text || t('noAppealReason') }}
+                            </p>
+                            <div class="flex justify-end gap-2 pt-2">
+                                <button @click="rejectAppeal(appeal)" class="px-4 py-2 bg-red-100 text-red-700 text-xs font-bold rounded-xl hover:bg-red-200 transition">
+                                    {{ t('btnRejectAppeal') }}
+                                </button>
+                                <button @click="approveAppeal(appeal)" class="px-4 py-2 bg-green-600 text-white text-xs font-bold rounded-xl hover:bg-green-700 transition shadow-sm">
+                                    {{ t('btnApproveAppeal') }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- MODALE BAN UTENTE -->
+        <div v-if="banModal.show" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-100">
+                <h3 class="text-lg font-bold text-gray-800 mb-2">
+                    {{ t('banModalTitle', { username: banModal.targetUsername }) }}
+                </h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">{{ t('banReasonLabel') }}</label>
+                        <input type="text" v-model="banModal.reason" :placeholder="t('banReasonPlaceholder')" class="w-full p-2.5 border rounded-xl text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">{{ t('banDurationLabel') }}</label>
+                        <select v-model="banModal.durationHours" class="w-full p-2.5 border rounded-xl text-xs bg-white">
+                            <option value="24">{{ t('duration24h') }}</option>
+                            <option value="72">{{ t('duration3d') }}</option>
+                            <option value="168">{{ t('duration7d') }}</option>
+                            <option value="permanent">{{ t('durationPermanent') }}</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-3 border-t">
+                        <button @click="banModal.show = false" class="px-4 py-2 bg-gray-100 text-gray-700 text-xs font-bold rounded-xl">
+                            {{ t('btnCancel') }}
+                        </button>
+                        <button @click="applyBan" :disabled="banModal.loading" class="px-4 py-2 bg-red-600 text-white text-xs font-bold rounded-xl hover:bg-red-700">
+                            {{ banModal.loading ? t('btnApplyingBan') : t('btnConfirmBan') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Script Base -->
+    <script src="../core/load-firebase.js"></script>
+    <script src="../shared/js/spottio-utils.js"></script>
+    <script src="../core/load-nav-scripts.js"></script>
+
+    <!-- Dizionario Internazionalizzazione Segnalazioni -->
+    <script type="module" src="i18n/segnalazioni-i18n.js"></script>
+    
+    <!-- Motore Vue Admin -->
+    <script src="admin.js"></script>
+</body>
+</html>
