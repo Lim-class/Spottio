@@ -2,7 +2,7 @@
   "name": "Spottio",
   "short_name": "Spottio",
   "description": "Spotta adesso, vivi lo Spot.",
-  "start_url": "/spot/spot.html",
+  "start_url": "spot/spot.html",
   "display": "standalone",
   "background_color": "#e0f2fe",
   "theme_color": "#ffffff",
