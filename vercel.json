@@ -1,5 +1,4 @@
 {
-  "cleanUrls": true,
   "rewrites": [
     { "source": "/posta", "destination": "/posta/posta.html" },
     { "source": "/chat", "destination": "/chat/chat.html" },
