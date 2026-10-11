@@ -1,14 +1,15 @@
 {
+  "trailingSlash": true,
   "rewrites": [
-    { "source": "/posta", "destination": "/posta/posta.html" },
-    { "source": "/chat", "destination": "/chat/chat.html" },
-    { "source": "/anonimo", "destination": "/anonimo/anonimo.html" },
-    { "source": "/cerca-persone", "destination": "/cerca-persone/cerca-persone.html" },
-    { "source": "/impostazioni", "destination": "/impostazioni/impostazioni.html" },
-    { "source": "/profilo", "destination": "/profilo/profilo.html" },
-    { "source": "/spot", "destination": "/spot/spot.html" },
-    { "source": "/spotini", "destination": "/spotini/spotini.html" },
-    { "source": "/utente", "destination": "/utente/utente.html" },
-    { "source": "/login", "destination": "/login/login.html" }
+    { "source": "/posta/", "destination": "/posta/posta.html" },
+    { "source": "/chat/", "destination": "/chat/chat.html" },
+    { "source": "/anonimo/", "destination": "/anonimo/anonimo.html" },
+    { "source": "/cerca-persone/", "destination": "/cerca-persone/cerca-persone.html" },
+    { "source": "/impostazioni/", "destination": "/impostazioni/impostazioni.html" },
+    { "source": "/profilo/", "destination": "/profilo/profilo.html" },
+    { "source": "/spot/", "destination": "/spot/spot.html" },
+    { "source": "/spotini/", "destination": "/spotini/spotini.html" },
+    { "source": "/utente/", "destination": "/utente/utente.html" },
+    { "source": "/login/", "destination": "/login/login.html" }
   ]
 }
