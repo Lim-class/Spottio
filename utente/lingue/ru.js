@@ -1,0 +1,20 @@
+export default {
+    followBtn: 'Подписаться',
+    followingBtn: 'Вы подписаны',
+    pendingBtn: 'Запрос отправлен',
+    privateAccountNotice: 'Это закрытый аккаунт',
+    privateAccountSub: 'Подпишитесь, чтобы видеть посты и активность профиля.',
+    noPostsPublished: 'Нет опубликованных постов.',
+    reportSpotTitle: 'Пожаловаться на спот',
+    reportReason: 'Причина',
+    reportReasonSelect: 'Выберите категорию...',
+    reportCopyright: 'Нарушение авторских прав',
+    reportGdpr: 'Нарушение конфиденциальности (GDPR)',
+    reportHarassment: 'Оскорбления, угрозы или вражда',
+    reportSpam: 'Спам или мошенничество',
+    reportOther: 'Другое',
+    reportDetails: 'Подробности',
+    reportDetailsPlaceholder: 'Укажите дополнительную информацию...',
+    sendBtn: 'Отправить',
+    loginToFollow: 'Войдите в аккаунт, чтобы подписаться.'
+};

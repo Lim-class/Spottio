@@ -1,0 +1,20 @@
+export default {
+    followBtn: 'フォローする',
+    followingBtn: 'フォロー中',
+    pendingBtn: 'リクエスト中',
+    privateAccountNotice: 'このアカウントは非公開です',
+    privateAccountSub: '投稿やアクティビティを表示するにはフォローしてください。',
+    noPostsPublished: '投稿はありません。',
+    reportSpotTitle: 'スポットを報告',
+    reportReason: '理由',
+    reportReasonSelect: 'カテゴリーを選択...',
+    reportCopyright: '著作権の侵害',
+    reportGdpr: 'プライバシー / 個人情報の侵害 (GDPR)',
+    reportHarassment: '嫌がらせ、脅迫、またはヘイトスピーチ',
+    reportSpam: 'スパムまたは詐欺',
+    reportOther: 'その他',
+    reportDetails: '詳細',
+    reportDetailsPlaceholder: '詳細情報を入力してください...',
+    sendBtn: '送信',
+    loginToFollow: 'フォローするにはログインしてください。'
+};

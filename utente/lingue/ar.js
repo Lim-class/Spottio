@@ -1,0 +1,20 @@
+export default {
+    followBtn: 'متابعة',
+    followingBtn: 'تتابعه',
+    pendingBtn: 'قيد الانتظار',
+    privateAccountNotice: 'هذا الحساب خاص',
+    privateAccountSub: 'تابع هذا الحساب لمشاهدة المنشورات والأنشطة.',
+    noPostsPublished: 'لا توجد منشورات منشورة.',
+    reportSpotTitle: 'إبلاغ عن المنشور',
+    reportReason: 'السبب',
+    reportReasonSelect: 'اختر فئة...',
+    reportCopyright: 'انتهاك حقوق الطبع والنشر',
+    reportGdpr: 'انتهاك الخصوصية / البيانات الشخصية (GDPR)',
+    reportHarassment: 'مضايقة أو تهديد أو كراهية',
+    reportSpam: 'رسائل غير مرغوب فيها أو احتيال',
+    reportOther: 'آخر',
+    reportDetails: 'التفاصيل',
+    reportDetailsPlaceholder: 'قدم معلومات إضافية...',
+    sendBtn: 'إرسال',
+    loginToFollow: 'يرجى تسجيل الدخول لمتابعة هذا المستخدم.'
+};

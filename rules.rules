@@ -1,0 +1,244 @@
+rules_version = '2';
+service cloud.firestore {
+
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // FUNZIONI DI SUPPORTO GLOBAL (HELPERS)
+    // ==========================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAuthorOrCoAuthor(postData) {
+      return isAuthenticated() && (
+        request.auth.uid == postData.user ||
+        (postData.coAuthors != null && request.auth.uid in postData.coAuthors) ||
+        (postData.allAuthors != null && request.auth.uid in postData.allAuthors)
+      );
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    function isParticipantInDM(conversationId) {
+      let members = conversationId.split('_');
+      return isOwner(members[0]) || isOwner(members[1]);
+    }
+
+    // ==========================================
+    // REGOLA 1: COLLEZIONE UTENTI & SOTTO-RACCOLTE
+    // ==========================================
+    match /users/{userId} {
+      allow read: if true; 
+      
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      
+      allow update: if isAdmin() || 
+                    (isOwner(userId) && 
+                     !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin']) &&
+                     (
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['banned']) || 
+                       (request.resource.data.banned.status == false && resource.data.banned.bannedUntil != null)
+                     )) ||
+                    (isAuthenticated() && 
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['banned']) &&
+                     request.resource.data.banned.bannedBy == 'system_auto') ||
+                    (isAuthenticated() && 
+                     request.resource.data.diff(resource.data).affectedKeys()
+                     .hasOnly(['followers', 'following', 'pending_follows']));
+                     
+      allow delete: if isOwner(userId) || isAdmin();
+
+      match /liked_posts/{postId} {
+        allow read: if isAuthenticated();
+        allow write, delete: if isOwner(userId) || isAdmin();
+      }
+
+      match /commented_posts/{postId} {
+        allow read: if isAuthenticated();
+        allow write, delete: if isOwner(userId) || isAdmin();
+      }
+    }
+    
+    // ==========================================
+    // REGOLA 2: POST PUBBLICATI ED INTERAZIONI (INCLUSI FLASHSPOT)
+    // ==========================================
+    match /posts/{postId} {
+      allow read: if true; 
+                    
+      allow create: if isAuthenticated() && isOwner(request.resource.data.user);
+      
+      allow update: if isAdmin() || isAuthorOrCoAuthor(resource.data) ||
+                    (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'comments', 'views'])) ||
+                    (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isHidden']) && request.resource.data.isHidden == true);
+
+      allow delete: if isAuthenticated() && (
+        isAuthorOrCoAuthor(resource.data) || 
+        isAdmin() || 
+        (resource.data.expiresAt != null && request.time >= resource.data.expiresAt)
+      );
+    }
+
+    // ==========================================
+    // REGOLA 3: CATEGORIE DEI POST 
+    // ==========================================
+    match /categories/{categoryId} {
+      allow read: if true; 
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // REGOLA 4: ANTEPRIME CHAT (SIDEBAR)
+    // ==========================================
+    match /chat_previews/{previewId} {
+      allow read: if isAuthenticated();
+      
+      allow write, delete: if isAuthenticated() && (
+        isParticipantInDM(previewId) || 
+        (resource != null && resource.data.participants.hasAny([request.auth.uid])) ||
+        (request.resource != null && request.resource.data.participants.hasAny([request.auth.uid])) ||
+        isAdmin()
+      ); 
+    }
+
+    // ==========================================
+    // REGOLA 5: CHAT PRIVATE (DM)
+    // ==========================================
+    match /chats/{conversationId} {
+      allow read, write, delete: if isParticipantInDM(conversationId) || isAdmin();
+      
+      match /messages/{messageId} {
+        allow read: if isParticipantInDM(conversationId) || isAdmin();
+        allow create: if isParticipantInDM(conversationId) && isOwner(request.resource.data.sender);
+        
+        allow update: if (isParticipantInDM(conversationId) && (
+          isOwner(resource.data.sender) || 
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readReceipts', 'reactions', 'deletedFor'])
+        )) || isAdmin();
+        
+        allow delete: if isParticipantInDM(conversationId) || isAdmin();
+      }
+    }
+
+    // ==========================================
+    // REGOLA 6: GRUPPI E CHAT DI GRUPPO
+    // ==========================================
+    match /groups/{groupId} {
+      allow read: if isAuthenticated(); 
+      allow create: if isAuthenticated();
+      
+      allow update: if isAuthenticated() && (
+        isOwner(resource.data.createdBy) || 
+        isAdmin() ||
+        resource.data.members.hasAny([request.auth.uid])
+      );
+      allow delete: if isAuthenticated() && (isOwner(resource.data.createdBy) || isAdmin());
+
+      match /chats/{messageId} {
+        allow read, create, update: if isAuthenticated();
+        allow delete: if isAuthenticated() || isAdmin();
+      }
+    }
+
+    // ==========================================
+    // REGOLA 7: MODERAZIONE SEGNALAZIONI (REPORTS)
+    // ==========================================
+    match /reports/{reportId} {
+      allow create: if isAuthenticated();
+      
+      allow read: if isAdmin() || (isAuthenticated() && (
+        resource.data.authorUid == request.auth.uid ||
+        resource.data.reportedBy == request.auth.uid ||
+        resource.data.author == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('username', '') ||
+        resource.data.postAuthor == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('username', '')
+      ));
+      
+      // Permette all'autore sanzionato di inviare ricorso sulla segnalazione o all'admin di moderarla
+      allow update: if isAdmin() || (
+        isAuthenticated() && 
+        resource.data.authorUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['appealStatus', 'appealText', 'appealedAt'])
+      );
+      
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.reportedBy == request.auth.uid);
+    }
+
+    // ==========================================
+    // REGOLA 8: CONFIGURAZIONI COLORI DI SFONDO
+    // ==========================================
+    match /ColoriSfondo/{colorId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // REGOLA 9: GIOCO AGRIGENTOPOLY (MULTIPLAYER)
+    // ==========================================
+    match /games/{roomId} {
+      allow read: if true; 
+      allow create, update: if true; 
+      allow delete: if isAdmin(); 
+    }
+
+    // ==========================================
+    // REGOLA 10: CHAT ANONIME (anon_threads)
+    // ==========================================
+    match /anon_threads/{threadId} {
+      allow read: if isAuthenticated() && (resource.data.participants.hasAny([request.auth.uid]) || isAdmin());
+      
+      allow create: if isAuthenticated() && 
+                    request.resource.data.authorUid == request.auth.uid &&
+                    request.resource.data.participants.hasAny([request.auth.uid]);
+      
+      allow update, delete: if isAuthenticated() && (
+        resource.data.participants.hasAny([request.auth.uid]) || isAdmin()
+      );
+
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/anon_threads/$(threadId)).data.participants.hasAny([request.auth.uid]) || isAdmin()
+        );
+        
+        allow create: if isAuthenticated() && 
+          get(/databases/$(database)/documents/anon_threads/$(threadId)).data.isBlocked != true &&
+          get(/databases/$(database)/documents/anon_threads/$(threadId)).data.participants.hasAny([request.auth.uid]) &&
+          (
+            (get(/databases/$(database)/documents/anon_threads/$(threadId)).data.authorUid == request.auth.uid && request.resource.data.senderRole == 'anonymous') ||
+            (get(/databases/$(database)/documents/anon_threads/$(threadId)).data.targetUid == request.auth.uid && request.resource.data.senderRole == 'target')
+          );
+        
+        allow update: if isAdmin() || (
+          isAuthenticated() && 
+          get(/databases/$(database)/documents/anon_threads/$(threadId)).data.participants.hasAny([request.auth.uid]) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readReceipts', 'reactions', 'deletedFor', 'text', 'deleted', 'edited'])
+        );
+          
+        allow delete: if isAuthenticated() && (
+          get(/databases/$(database)/documents/anon_threads/$(threadId)).data.participants.hasAny([request.auth.uid]) || isAdmin()
+        );
+      }
+    }
+
+    // ==========================================
+    // REGOLA 11: RICORSI BAN & CONTENUTI (APPEALS)
+    // ==========================================
+    match /appeals/{appealId} {
+      allow create: if request.resource.data.status == 'pending'
+                    && request.resource.data.appealText is string
+                    && request.resource.data.appealText.size() > 0;
+      
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+    
+  }
+}

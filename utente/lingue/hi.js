@@ -1,0 +1,20 @@
+export default {
+    followBtn: 'फ़ॉलो करें',
+    followingBtn: 'फ़ॉलो कर रहे हैं',
+    pendingBtn: 'अनुरोधित',
+    privateAccountNotice: 'यह खाता निजी है',
+    privateAccountSub: 'स्पॉट और गतिविधियाँ देखने के लिए इस प्रोफ़ाइल को फ़ॉलो करें।',
+    noPostsPublished: 'कोई पोस्ट प्रकाशित नहीं है।',
+    reportSpotTitle: 'स्पॉट की रिपोर्ट करें',
+    reportReason: 'कारण',
+    reportReasonSelect: 'एक श्रेणी चुनें...',
+    reportCopyright: 'कॉपीराइट का उल्लंघन',
+    reportGdpr: 'गोपनीयता / व्यक्तिगत डेटा उल्लंघन (GDPR)',
+    reportHarassment: 'उत्पीड़न, धमकी या नफ़रत',
+    reportSpam: 'स्पैम या धोखाधड़ी',
+    reportOther: 'अन्य',
+    reportDetails: 'विवरण',
+    reportDetailsPlaceholder: 'अतिरिक्त जानकारी प्रदान करें...',
+    sendBtn: 'सबमिट करें',
+    loginToFollow: 'उपयोगकर्ता को फ़ॉलो करने के लिए कृपया लॉग इन करें।'
+};

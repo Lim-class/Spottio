@@ -1,0 +1,48 @@
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://www.gstatic.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; font-src 'self' data: https:; img-src 'self' data: blob: https://flagcdn.com https://i.ibb.co https://res.cloudinary.com https://*.googleusercontent.com https://*.firebasestorage.app; media-src 'self' blob: data: https://res.cloudinary.com https://*.firebasestorage.app https://spottio-1419e.firebasestorage.app; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebasestorage.app https://spottio-1419e.firebasestorage.app https://api.cloudinary.com https://www.thecolorapi.com; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/posta", "destination": "/posta/posta.html" },
+    { "source": "/posta/", "destination": "/posta/posta.html" },
+    { "source": "/chat", "destination": "/chat/chat.html" },
+    { "source": "/chat/", "destination": "/chat/chat.html" },
+    { "source": "/anonimo", "destination": "/anonimo/anonimo.html" },
+    { "source": "/anonimo/", "destination": "/anonimo/anonimo.html" },
+    { "source": "/cerca-persone", "destination": "/cerca-persone/cerca-persone.html" },
+    { "source": "/cerca-persone/", "destination": "/cerca-persone/cerca-persone.html" },
+    { "source": "/impostazioni", "destination": "/impostazioni/impostazioni.html" },
+    { "source": "/impostazioni/", "destination": "/impostazioni/impostazioni.html" },
+    { "source": "/profilo", "destination": "/profilo/profilo.html" },
+    { "source": "/profilo/", "destination": "/profilo/profilo.html" },
+    { "source": "/spot", "destination": "/spot/spot.html" },
+    { "source": "/spot/", "destination": "/spot/spot.html" },
+    { "source": "/spotini", "destination": "/spotini/spotini.html" },
+    { "source": "/spotini/", "destination": "/spotini/spotini.html" },
+    { "source": "/utente", "destination": "/utente/utente.html" },
+    { "source": "/utente/", "destination": "/utente/utente.html" },
+    { "source": "/login", "destination": "/login/login.html" },
+    { "source": "/login/", "destination": "/login/login.html" }
+  ]
+}
