@@ -1,0 +1,87 @@
+# 📱 Social Feed Web App - Documentazione Tecnica e Frontend
+
+Questo repository contiene l'architettura frontend per un'applicazione social web leggera e reattiva. Il sistema è sviluppato in **Vanilla JavaScript** (ES6+), **HTML5** e **CSS3** (sfruttando le classi di utility di Tailwind CSS), e si integra direttamente con **Firebase Firestore** come database NoSQL in tempo reale.
+
+L'applicazione include funzionalità avanzate tra cui un **algoritmo di raccomandazione personalizzato con decadimento temporale**, **paginazione con scroll infinito**, un **sistema di protezione dalle vulnerabilità XSS** e un **pannello completo di moderazione (Admin)** sincronizzato in tempo reale.
+
+---
+
+## 🧠 1. Architettura dell'Algoritmo di Raccomandazione
+
+Il feed non mostra i contenuti in ordine puramente cronologico, ma adatta l'ordine dei post in base ai gusti dell'utente loggato. Questo processo si articola in due fasi: accumulo dei punti e decadimento temporale.
+
+### Accumulo dei Punti (Interazioni)
+Ogni post è associato a una categoria (es. *Generale*, *Sport*, *Tecnologia*). Quando l'utente interagisce con un post, il sistema modifica il punteggio di quella categoria all'interno del documento dell'utente nella collezione `users` su Firestore:
+* **Aggiunta di un Like:** `+1` punto alla categoria del post.
+* **Rimozione di un Like:** `-1` punto alla categoria del post.
+* **Inserimento di un Commento:** `+2` punti alla categoria del post.
+
+### Il Decadimento Temporale (Time-Decay)
+Per evitare che gli interessi passati dominino indefinitamente il feed, viene applicato un algoritmo di decadimento esponenziale basato sul tempo. Durante il caricamento iniziale (`feed.js`), il sistema calcola i giorni trascorsi dall'ultimo aggiornamento di ciascuna categoria (`lastUpdate`):
+* Se sono trascorsi **30 o più giorni** dall'ultima interazione con una specifica categoria, il punteggio accumulato viene **dimezzato** per ogni ciclo di 30 giorni (es. dopo 60 giorni il punteggio viene diviso per 4).
+
+### Logica di Ordinamento (Sorting Localizzato)
+Per ottimizzare le performance e ridurre i costi di lettura del database, l'applicazione adotta una strategia ibrida:
+1. Scarica i 10 post più recenti da Firestore.
+2. Applica un ordinamento locale (`Array.prototype.sort()`) su questi 10 post, posizionando per primi i post le cui categorie hanno un punteggio utente più alto.
+3. Se i post appartengono a categorie con lo stesso punteggio (o se l'utente è un ospite), l'ordinamento prioritario torna ad essere quello cronologico (dal più recente al più vecchio).
+
+---
+
+## 📂 2. Analisi Dettagliata dei Moduli JavaScript
+
+### 📄 `feed.js`
+È il regista del feed principale. Gestisce il ciclo di vita dei post, la memoria dell'algoritmo e il caricamento dei dati.
+* **`loadInitialPosts()`**: Funzione di inizializzazione eseguita al caricamento del DOM. Recupera il profilo dell'utente corrente, estrae le preferenze da Firestore, applica la logica di *Time-Decay* descritta sopra e popola una cache locale (`cachedPreferences`). Infine, avvia il primo recupero dei dati.
+* **`fetchPosts()`**: Esegue la query su Firestore richiedendo i post ordinati per `timestamp` decrescente con un limite fisso di 10 elementi (`POSTS_PER_PAGE`). Memorizza l'ultimo documento letto (`lastVisiblePost`) per consentire la paginazione e ordina i post in base alle preferenze dell'utente prima di inviarli al renderer visivo.
+* **`setupInfiniteScroll()`**: Implementa lo scroll infinito. Crea un elemento HTML invisibile (`#infinite-scroll-sentinel`) in fondo al container dei post e lo monitora tramite l'API nativa `IntersectionObserver`. Quando l'utente scorre la pagina fino alla sentinella, viene invocata automaticamente `fetchPosts()` per caricare la pagina successiva.
+
+### 📄 `algorithm-interactions.js`
+Gestisce le interazioni rapide (Like) e la loro ripercussione immediata sull'interfaccia e sull'algoritmo.
+* **`toggleLike(postId)`**: Controlla se l'utente ha già messo "Mi piace" a un determinato post (verificando la presenza del suo ID nell'array `likes` del post). 
+    * Se l'utente non ha messo like, effettua una transazione `arrayUnion` su Firestore per aggiungere il like e incrementa contemporaneamente il punteggio della categoria dell'utente usando `FieldValue.increment(1)`.
+    * Se il like è già presente, esegue un `arrayRemove` e decrementa il punteggio utente di `1`.
+    * **Ottimizzazione UI:** Modifica istantaneamente le classi CSS del pulsante (cambiando il colore del cuore e aggiornando il contatore numerico) senza attendere il completamento della chiamata di rete verso Firestore, garantendo un'esperienza utente fluida.
+
+### 📄 `ui-actions.js`
+Raccoglie le azioni utente complesse che richiedono l'invio di testi, l'apertura di finestre modali o l'eliminazione di record.
+* **`escapeHTMLGlobal(str)`**: Funzione globale fondamentale per la sicurezza. Converte i caratteri sensibili (`&`, `<`, `>`, `'`, `"`) in entità HTML sicure, neutralizzando qualsiasi tentativo di attacco XSS (Injection di script malevoli).
+* **`addComment(postId)`**: Legge l'input testuale, genera un timestamp formattato per l'Italia (`it-IT`) e inserisce il commento nell'array `comments` del post su Firestore tramite `arrayUnion`. Subito dopo, premia l'utente incrementando di `2` punti la categoria corrispondente nel database e inserisce dinamicamente il nuovo commento nella lista visibile a schermo, aggiornando il contatore.
+* **`confirmDeletePost(postId)`**: Mostra una richiesta di conferma per evitare cancellazioni accidentali. Alla conferma dell'utente, elimina permanentemente il documento del post dalla collezione `posts` di Firestore e rimuove l'elemento corrispondente dal DOM.
+* **Gestione Modifica (`fetchCategoriesForEdit`, `openEditModal`, `save-edit`)**: Permette agli autori dei post o agli amministratori di modificare il testo e la categoria di un post esistente. Al momento dell'apertura del modale, esegue un fetch dinamico della collezione `categories` per popolare la lista delle categorie selezionabili. Durante il salvataggio, il pulsante viene disabilitato per prevenire click multipli e scritture duplicate sul database.
+
+### 📄 `ui-renderer.js`
+È la "fabbrica" dell'interfaccia grafica dei post. Riceve i dati grezzi da Firestore e restituisce i componenti grafici completi.
+* **`renderPost(postId, post, currentUser, isAdmin)`**: Costruisce l'intero blocco HTML di un singolo post applicando logiche condizionali avanzate:
+    * **Avatar:** Verifica se il post contiene un URL immagine per il profilo (`userPfUri`); in caso contrario, genera un avatar con un gradiente CSS moderno (`from-blue-500 to-blue-300`) contenente l'iniziale dell'autore.
+    * **Riconoscimento Media:** Ispeziona le proprietà del post per capire se l'allegato multimediale (`mediaUri`) è un video o un'immagine, generando di conseguenza un tag `<video>` con controlli nativi o un tag `<img>` cliccabile.
+    * **Gestione Permessi:** Renderizza i pulsanti di modifica ed eliminazione *solo* se l'utente corrente corrisponde all'autore del post (`post.user` / `post.author`) o se l'utente ha effettuato l'accesso come amministratore (`isAdmin`). Rende visibile il tasto di segnalazione solo se l'utente è loggato e non è l'autore del post stesso.
+    * **Protezione Argomenti JS:** Utilizza `encodeURIComponent` per passare in sicurezza i testi dei post come parametri stringa all'interno degli attributi HTML `onclick` (es. nel pulsante di segnalazione), evitando che la presenza di apici singoli o doppi nel testo inserito dall'utente possa rompere la sintassi JavaScript del DOM.
+
+### 📄 `reports.js` & `reports-page.js` (Ecosistema di Moderazione)
+Questi due moduli gestiscono la segnalazione dei contenuti non appropriati e la dashboard di controllo per gli amministratori.
+* **`reports.js` (Lato Utente)**: Definisce la funzione globale `reportPost()`. All'attivazione, apre il modale di segnalazione `#report-modal`, compila i dati nascosti e intercetta l'evento `onsubmit` del form. Crea un oggetto contenente i dettagli del post abusivo, la motivazione e la descrizione fornita, salvando il report nella collezione `reports` di Firestore.
+* **`reports-page.js` (Lato Admin)**: Modulo per la pagina di amministrazione protetta. 
+    * Effettua un controllo di sicurezza iniziale (`currentUser !== 'admin'`); se l'utente non è autorizzato, blocca il rendering e mostra un messaggio di errore.
+    * Configura un ascoltatore in tempo reale (`onSnapshot`) sulla collezione `reports`, ordinando i dati per data decrescente. Qualsiasi nuova segnalazione inviata da un utente (o da un'app mobile sincronizzata) apparirà istantaneamente sullo schermo dell'amministratore.
+    * Fornisce tre azioni amministrative distruttive:
+        1. `deleteReportFromFirestore(reportId)`: Archivia/scarta la segnalazione rimuovendola dal database (il post originale non viene toccato).
+        2. `deletePostFromFirestore(postId, reportId)`: Rimuove permanentemente il post originale dalla collezione `posts` e, in caso di successo, cancella la segnalazione associata per pulire la coda.
+        3. `deleteAllReports()`: Esegue un'operazione di massa (`firebase.firestore.batch()`) per svuotare completamente la collezione delle segnalazioni senza eliminare i post fisici.
+
+---
+
+## 🎨 3. Personalizzazioni Grafiche (`pubblici.css`)
+
+Il file CSS gestisce le rifiniture grafiche e le transizioni animate che non possono essere coperte esclusivamente dalle classi standard di Tailwind CSS:
+* **`.custom-scrollbar`**: Personalizza l'aspetto visivo della barra di scorrimento all'interno del riquadro dei commenti dei post sui browser basati su WebKit (Chrome, Safari, Edge). Riduce lo spessore a `4px` e rende i bordi arrotondati per un look minimalista.
+* **Gestione Modali**: Regola il comportamento del modale di segnalazione (`#report-modal`), forzando un layout flessibile centrato (`display: flex`) quando la classe `.open` viene iniettata via JavaScript.
+* **Animazione Commenti**: Applica un'animazione fluida di *Fade-In* combinata con una leggera traslazione verticale (`translateY`) tramite le regole `@keyframes fadeIn` quando la sezione commenti di un post viene espansa dall'utente.
+
+---
+
+## 🛡️ 4. Riepilogo Misure di Sicurezza Implementate
+
+1. **XSS Prevention**: Nessun testo digitato dagli utenti viene inserito direttamente nel DOM con proprietà insicure (come `innerHTML`) senza prima essere passato attraverso `escapeHTMLGlobal` o funzioni locali di sanificazione equivalenti.
+2. **Data Encoding**: Tutti i parametri testuali dinamici incorporati all'interno di stringhe HTML inserite nel DOM vengono codificati con `encodeURIComponent` e ripuliti dai caratteri di escape dei letterali stringa (come `%27` per gli apici), prevenendo vulnerabilità di tipo JavaScript Injection.
+3. **Client-Side Role Enforcement**: Le opzioni amministrative e di modifica dei post sono protette a livello di interfaccia tramite controlli condizionali rigorosi sulle variabili di sessione dell'utente locale (`localStorage`).
