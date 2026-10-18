@@ -1,12 +1,12 @@
 // =========================================================================
-// FILE: pwa-init.js - Gestione Aggiornamento Automatico PWA / Service Worker
+// FILE: pwa-init.js - Gestione Aggiornamento PWA senza Loop
 // =========================================================================
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        // Parametro timestamp per impedire al browser di conservare sw.js nella cache HTTP
-        navigator.serviceWorker.register('/sw.js?v=' + Date.now()).then((registration) => {
-            // Verifica subito aggiornamenti sul server
+        // Registrazione su URL fisso: Vercel gestisce l'aggiornamento tramite "no-cache"
+        navigator.serviceWorker.register('/sw.js').then((registration) => {
+            // Controlla se sul server è presente una nuova versione
             registration.update();
 
             registration.onupdatefound = () => {
@@ -14,11 +14,9 @@ if ('serviceWorker' in navigator) {
                 if (!installingWorker) return;
 
                 installingWorker.onstatechange = () => {
-                    if (installingWorker.state === 'installed') {
-                        if (navigator.serviceWorker.controller) {
-                            console.log('[PWA] Nuova versione rilevata. Aggiornamento in corso...');
-                            installingWorker.postMessage({ action: 'skipWaiting' });
-                        }
+                    // Si attiva solo quando un nuovo worker sostituisce uno già esistente
+                    if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        installingWorker.postMessage({ action: 'skipWaiting' });
                     }
                 };
             };
@@ -26,13 +24,19 @@ if ('serviceWorker' in navigator) {
             console.warn('[PWA] Registrazione Service Worker non riuscita:', err);
         });
 
-        // Quando il nuovo worker subentra, esegue un refresh controllato
-        let refreshing = false;
+        // Esegue il refresh una sola volta per sessione quando cambia la versione
+        let isRefreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (!refreshing) {
-                refreshing = true;
+            if (!isRefreshing && !sessionStorage.getItem('pwa_refreshed')) {
+                isRefreshing = true;
+                sessionStorage.setItem('pwa_refreshed', 'true');
                 window.location.reload();
             }
+        });
+
+        // Resetta il flag di sessione se la pagina è già stabile
+        window.addEventListener('pageshow', () => {
+            sessionStorage.removeItem('pwa_refreshed');
         });
     });
 }
