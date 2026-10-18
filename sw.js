@@ -3,9 +3,9 @@
 // Cache-First per asset locali statici con bypass per API e CDN esterne
 // =========================================================================
 
-const CACHE_NAME = 'spottio-cache-v14';
+const CACHE_NAME = 'spottio-cache-v15';
 
-// Risorse statiche core dello stesso dominio da pre-caricare
+// Risorse statiche core locali da pre-caricare
 const PRECACHE_ASSETS = [
     '/',
     '/index.html',
@@ -16,7 +16,7 @@ const PRECACHE_ASSETS = [
     '/Logo main-site/Logo_bis_me.jpg'
 ];
 
-// Installazione: memorizza nella cache gli asset essenziali locali
+// Installazione: scarica gli asset essenziali
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
@@ -27,7 +27,7 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// Attivazione: elimina le vecchie cache non più allineate
+// Attivazione: elimina tutte le versioni di cache obsolete e prende il controllo
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
@@ -42,33 +42,39 @@ self.addEventListener('activate', (event) => {
     );
 });
 
+// Ascolto messaggi inviati da pwa-init.js per forzare l'aggiornamento
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.action === 'skipWaiting') {
+        self.skipWaiting();
+    }
+});
+
 // Fetch: gestione mirata del traffico di rete
 self.addEventListener('fetch', (event) => {
     const request = event.request;
 
-    // 1. Ignora qualsiasi metodo diverso da GET (POST per /api/crypto, Firestore, ecc.)
+    // 1. Non intercettare metodi diversi da GET (es. POST per /api/crypto, Firebase, ecc.)
     if (request.method !== 'GET') {
         return;
     }
 
     const url = new URL(request.url);
 
-    // 2. Bypass totale per la Serverless Function e le chiamate API interne
+    // 2. Bypass totale per Serverless Function e rotte /api/
     if (url.pathname.startsWith('/api/')) {
         return;
     }
 
-    // 3. Bypass totale per domini esterni (Firebase SDK, Firestore WebSockets, Google Fonts, Cloudinary, FlagCDN)
-    // Lascia che il browser contatti direttamente la rete senza rischiare 503 fittizi
+    // 3. Bypass totale per domini esterni (Firebase SDK, Firestore WebSockets, Google Fonts, FlagCDN, Cloudinary)
+    // Permette al browser di contattare la rete direttamente prevenendo risposte 503 fittizie
     if (url.origin !== self.location.origin) {
         return;
     }
 
-    // 4. Per i file statici dello stesso dominio: Network First con fallback a Cache
+    // 4. File statici dello stesso dominio: Network First con fallback a Cache
     event.respondWith(
         fetch(request)
             .then((networkResponse) => {
-                // Se la risposta è valida, aggiorna la cache in background
                 if (networkResponse && networkResponse.status === 200) {
                     const responseClone = networkResponse.clone();
                     caches.open(CACHE_NAME).then((cache) => {
@@ -78,7 +84,6 @@ self.addEventListener('fetch', (event) => {
                 return networkResponse;
             })
             .catch(() => {
-                // In assenza di connessione usa la copia salvata in cache
                 return caches.match(request);
             })
     );
