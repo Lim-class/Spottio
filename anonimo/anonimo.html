@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messaggi Anonimi - Spottio</title>
+    <link rel="icon" href="https://i.ibb.co/b5HgvzCB/Spottio-Logo-2.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../chat/chat.css">
+    <link rel="stylesheet" href="../impostazioni/body.css">
+</head>
+<body class="flex min-h-screen relative">
+
+    <div id="sidebar-container" class="w-1/5 bg-white p-6 rounded-r-2xl shadow-xl flex flex-col justify-start items-start sticky top-0 h-screen transition-all duration-300">
+        <h2 id="menu-title" class="text-2xl font-bold text-gray-800 mb-6 w-full"></h2>
+        <div id="nav-container" class="w-full"></div>
+    </div>
+    
+    <div id="vue-anon-app" v-cloak class="flex-grow p-4 lg:p-8 flex h-screen overflow-hidden">
+        
+        <div id="chat-list-container" 
+            class="w-full lg:w-1/3 bg-white p-6 rounded-2xl lg:rounded-l-2xl lg:rounded-r-none shadow-xl flex-col h-full overflow-hidden" 
+            :class="isChatActiveMobile ? 'hidden lg:flex' : 'flex'">
+            
+            <div class="flex items-center gap-2 mb-3 shrink-0">
+                <a href="../chat/chat.html" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2.5 rounded-xl transition-colors shrink-0 flex items-center justify-center" title="Torna alle chat standard">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                </a>
+
+                <button @click="openNewAnonModal" class="bg-purple-100 text-purple-700 hover:bg-purple-200 p-2.5 rounded-xl transition-colors shrink-0 flex items-center justify-center" title="Scrivi in Anonimo">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+                
+                <div class="relative flex-grow">
+                    <input type="text" v-model="searchQuery" placeholder="Filtra conversazioni anonime..." class="w-full p-2.5 pl-10 rounded-xl bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex rounded-xl bg-gray-100 p-1 mb-4 shrink-0">
+                <button @click="activeTab = 'received'" :class="['flex-1 py-1.5 text-xs font-bold rounded-lg transition-all', activeTab === 'received' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700']">
+                    Ricevuti ({{ receivedThreads.length }})
+                </button>
+                <button @click="activeTab = 'sent'" :class="['flex-1 py-1.5 text-xs font-bold rounded-lg transition-all', activeTab === 'sent' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700']">
+                    Inviati da me ({{ sentThreads.length }})
+                </button>
+            </div>
+
+            <div class="flex-grow overflow-y-auto space-y-4 custom-scrollbar">
+                <div v-if="filteredThreads.length === 0" class="text-center py-12 text-gray-400 text-xs italic">
+                    {{ activeTab === 'received' ? 'Nessun messaggio anonimo ricevuto.' : 'Non hai ancora inviato messaggi anonimi.' }}
+                </div>
+
+                <div v-for="thread in filteredThreads" :key="thread.id" @click="selectThread(thread)" :class="['flex items-center p-3 mb-2 rounded-xl cursor-pointer transition-all duration-200 w-full min-w-0', activeThread?.id === thread.id ? 'bg-purple-100 shadow-sm' : 'hover:bg-gray-100']">
+                    <div v-if="thread.authorUid === getCurrentUid()" v-html="getAvatar(thread.targetAvatarUrl, thread.displayTitle, 'w-12 h-12 mr-3 text-lg shrink-0', false)"></div>
+                    <div v-else class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 mr-3 border border-purple-200 bg-purple-100 text-purple-700 text-lg">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                        </svg>
+                    </div>
+
+                    <div class="flex-grow overflow-hidden min-w-0">
+                        <div class="flex items-center justify-between gap-1">
+                            <div class="flex items-center gap-0.5 truncate">
+                                <h4 class="font-semibold text-gray-800 truncate text-sm">{{ thread.displayTitle }}</h4>
+                                <span v-if="thread.targetIsVerified && thread.authorUid === getCurrentUid()" v-html="verifiedIcon('w-4 h-4 text-blue-500 ml-1 inline-block shrink-0')"></span>
+                            </div>
+                            <span v-if="thread.isBlocked" class="text-[9px] bg-red-100 text-red-600 font-bold px-1.5 py-0.5 rounded shrink-0">Bloccato</span>
+                        </div>
+                        <p class="text-xs text-gray-500 truncate">{{ thread.lastMessage }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <chat-messages
+            mode="anonymous"
+            :active-chat="activeThread || { id: null }"
+            :is-chat-active-mobile="isChatActiveMobile"
+            :is-receiver="isReceiver"
+            :is-anon-waiting-for-reply="isAnonWaitingForReply"
+            :ephemeral-duration="ephemeralDuration"
+            :get-ephemeral-label="getEphemeralLabel"
+            v-model:selected-bg="selectedBg"
+            :bg-options="bgOptions"
+            :bg-style="bgStyle"
+            :messages="messages"
+            :has-more-messages="hasMoreMessages"
+            :is-loading-more="isLoadingMore"
+            :open-dropdown-id="openDropdownId"
+            :editing-msg-id="editingMsgId"
+            v-model:edit-msg-text="editMsgText"
+            :replying-to="replyingTo"
+            :is-recording-audio="isRecordingAudio"
+            :audio-recording-seconds="audioRecordingSeconds"
+            :is-view-once-audio="isViewOnceAudio"
+            :show-schedule-modal="showScheduleModal"
+            v-model:scheduled-date-time="scheduledDateTime"
+            v-model:new-message="newMessage"
+            :get-current-uid="getCurrentUid"
+            :get-avatar="getAvatar"
+            :verified-icon="verifiedIcon"
+            @go-back="goBackToList"
+            @block-thread="blockThread"
+            @ephemeral-change="onEphemeralSelectChange"
+            @change-bg="onBackgroundChange"
+            @upload-custom-bg="uploadCustomBg"
+            @load-older="loadOlderMessages"
+            @scroll-messages="handleMessagesScroll"
+            @start-reply="startReply"
+            @toggle-dropdown="toggleMsgDropdown"
+            @view-msg-info="viewMessageInfo"
+            @start-edit="startEdit"
+            @delete-for-me="deleteMessageForMe"
+            @delete-for-everyone="deleteMessageForEveryone"
+            @scroll-to-msg="scrollToMessage"
+            @cancel-edit="cancelEdit"
+            @save-edit="saveEdit"
+            @toggle-reaction="toggleReaction"
+            @cancel-reply="cancelReply"
+            @toggle-view-once="toggleViewOnceAudio"
+            @play-view-once="handlePlayViewOnceAudio"
+            @open-schedule-modal="showScheduleModal = true"
+            @close-schedule-modal="showScheduleModal = false"
+            @confirm-schedule="confirmScheduleMessage"
+            @cancel-audio="cancelAudioRecording"
+            @stop-audio="stopAudioRecording"
+            @start-audio="startAudioRecording"
+            @send-media="sendMediaMessage"
+            @send-message="sendMessage">
+        </chat-messages>
+
+        <message-info-modal 
+            :show="showMsgInfoModal" 
+            :selected-msg-info="selectedMsgInfo"
+            accent-color="purple" 
+            @close="closeMsgInfoModal">
+        </message-info-modal>
+
+        <ephemeral-modal
+            :show="showCustomEphemeralModal"
+            v-model:custom-ephemeral-value="customEphemeralValue"
+            v-model:custom-ephemeral-unit="customEphemeralUnit"
+            accent-color="purple"
+            @close="closeCustomEphemeralModal"
+            @confirm="confirmCustomEphemeral">
+        </ephemeral-modal>
+
+        <div v-if="showNewAnonModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-2xl shadow-2xl w-96 flex flex-col">
+                <div class="flex justify-between items-center border-b pb-3 mb-4">
+                    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                        Nuovo Messaggio Anonimo
+                    </h3>
+                    <button @click="closeNewAnonModal" class="text-gray-400 hover:text-gray-600 text-lg font-bold">×</button>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Destinatario:</label>
+                    <div class="relative">
+                        <input type="text" v-model="targetUserSearch" @input="searchRecipient" placeholder="Cerca username Spottio..." class="w-full p-2.5 pl-9 rounded-xl bg-gray-50 border border-gray-300 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        </div>
+                    </div>
+                    
+                    <div v-if="targetSearchResults.length > 0" class="border rounded-xl mt-1 max-h-36 overflow-y-auto bg-white shadow-lg">
+                        <div v-for="user in targetSearchResults" :key="user.id" @click="selectRecipient(user)" class="p-2.5 hover:bg-purple-50 cursor-pointer text-xs font-medium border-b last:border-0 flex items-center gap-2.5 transition-colors">
+                            <div v-html="getAvatar(user.avatarUrl, user.username, 'w-8 h-8 shrink-0', false)"></div>
+                            <div class="flex items-center gap-1 font-semibold text-gray-800">
+                                <span>{{ user.username }}</span>
+                                <span v-if="user.isVerified" v-html="verifiedIcon('w-3.5 h-3.5 text-blue-500 inline-block shrink-0')"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="selectedTargetUser" class="p-2.5 bg-purple-50 border border-purple-200 rounded-xl mb-3 flex justify-between items-center">
+                    <div class="flex items-center gap-2.5">
+                        <div v-html="getAvatar(selectedTargetUser.avatarUrl, selectedTargetUser.username, 'w-9 h-9 shrink-0', false)"></div>
+                        <div class="flex flex-col">
+                            <div class="flex items-center gap-1 text-xs font-bold text-gray-800">
+                                <span>{{ selectedTargetUser.username }}</span>
+                                <span v-if="selectedTargetUser.isVerified" v-html="verifiedIcon('w-3.5 h-3.5 text-blue-500 inline-block shrink-0')"></span>
+                            </div>
+                            <span class="text-[10px] text-purple-700 font-medium">Riceverà il messaggio in anonimo</span>
+                        </div>
+                    </div>
+                    <button @click="selectedTargetUser = null" class="text-gray-400 hover:text-red-500 text-lg font-bold px-2">×</button>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Messaggio iniziale:</label>
+                    <textarea v-model="initialMessageText" rows="3" placeholder="Scrivi quello che pensi in totale sicurezza..." class="w-full p-2.5 rounded-xl bg-gray-50 border border-gray-300 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <button @click="closeNewAnonModal" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl">Annulla</button>
+                    <button @click="confirmSendNewAnon" :disabled="isSending" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow transition-colors">
+                        {{ isSending ? 'Invio in corso...' : 'Invia Anonimo' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Base -->
+    <script src="../chat/spottio-crypto.js"></script>
+    <script src="../core/load-firebase.js"></script>
+    <script src="../core/load-shared-scripts.js"></script>
+    <script src="../posta/posta-media.js"></script>
+
+    <!-- Motore Messaggistica Dedicato -->
+    <script src="../chat-engine/load-chat-engine.js"></script>
+
+    <!-- Moduli e App Anonima -->
+    <script src="../chat/theme/use-chat-theme.js"></script>
+    <script src="anonimo-main.js"></script>
+    <script src="../core/load-nav-scripts.js"></script>
+</body>
+</html>
